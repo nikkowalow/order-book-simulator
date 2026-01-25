@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/nikkokowalow/dev/order-book-simulator/build/cmake_install.cmake",
-		"/Users/nikkokowalow/dev/order-book-simulator/build/external/tabulate/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
