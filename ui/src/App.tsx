@@ -26,6 +26,8 @@ export default function OrderBookTable() {
   const [qty, setQty] = useState("");
   const [cancelId, setCancelId] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [orderLatencyMs, setOrderLatencyMs] = useState<number | null>(null);
+  const [cancelLatencyMs, setCancelLatencyMs] = useState<number | null>(null);
 
   const submitOrder = async (side: "BUY" | "SELL") => {
     const p = parseInt(price, 10);
@@ -34,17 +36,36 @@ export default function OrderBookTable() {
       setStatus("Invalid price or qty");
       return;
     }
+
+    setStatus(null);
+
+    const t0 = performance.now();
     try {
       const res = await fetch("http://localhost:8080/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ side, price: p, qty: q }),
       });
-      const data = await res.json();
-      console.log(data);
+
+      const t1 = performance.now();
+      setOrderLatencyMs(t1 - t0);
+
+      // If server returns non-2xx, still try to read error json
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data?.error
+          ? `HTTP ${res.status}: ${data.error}`
+          : `HTTP ${res.status}`;
+        setStatus(msg);
+        return;
+      }
+
       setStatus(`Order ${data.id}: ${data.trades?.length || 0} trades`);
     } catch (e: any) {
-      setStatus(`Error: ${e.message}`);
+      const t1 = performance.now();
+      setOrderLatencyMs(t1 - t0);
+      setStatus(`Error: ${e?.message ?? "request failed"}`);
     }
   };
 
@@ -206,6 +227,40 @@ export default function OrderBookTable() {
               {status}
             </span>
           )}
+          <div style={{ flexBasis: "100%", height: 0 }} />
+
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+              Order latency:{" "}
+              <strong style={{ color: "rgba(0,0,0,0.75)" }}>
+                {orderLatencyMs == null
+                  ? "—"
+                  : `${orderLatencyMs.toFixed(1)} ms`}
+              </strong>
+            </span>
+
+            <span style={{ fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+              Cancel latency:{" "}
+              <strong style={{ color: "rgba(0,0,0,0.75)" }}>
+                {cancelLatencyMs == null
+                  ? "—"
+                  : `${cancelLatencyMs.toFixed(1)} ms`}
+              </strong>
+            </span>
+
+            {status && (
+              <span style={{ fontSize: 13, color: "rgba(0,0,0,0.6)" }}>
+                {status}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
