@@ -23,22 +23,6 @@ function fmt(n: number, decimals = 0) {
   });
 }
 
-function makeDummyBook(mid = 126.1, depth = 12): Book {
-  const bids: Level[] = Array.from({ length: depth }, (_, i) => {
-    const price = +(mid - 0.1 * (i + 1)).toFixed(1);
-    const qty = Math.round(10 + Math.random() * 240);
-    return { price, qty };
-  });
-
-  const asks: Level[] = Array.from({ length: depth }, (_, i) => {
-    const price = +(mid + 0.1 * (i + 1)).toFixed(1);
-    const qty = Math.round(10 + Math.random() * 240);
-    return { price, qty };
-  });
-
-  return { bids, asks };
-}
-
 function BarCell({
   side,
   value,
@@ -52,7 +36,6 @@ function BarCell({
 }) {
   const pct = max <= 0 ? 0 : clamp((value / max) * 100, 0, 100);
 
-  // Bar sits behind text; bids fill from left -> right, asks fill from right -> left
   const barStyle: React.CSSProperties =
     side === "bid"
       ? {
@@ -106,21 +89,58 @@ function BarCell({
 }
 
 export default function OrderBookTable() {
-  const [book, setBook] = useState<Book>(() => makeDummyBook());
+  const [book, setBook] = useState<Book | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setBook(makeDummyBook());
-    }, 500);
-    return () => clearInterval(id);
+    let cancelled = false;
+
+    const fetchBook = async () => {
+      try {
+        setErr(null);
+        const res = await fetch("http://localhost:8080/book", {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = (await res.json()) as Book;
+
+        if (!cancelled) setBook(data);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message ?? "Failed to fetch /book");
+      }
+    };
+
+    fetchBook();
+    const id = setInterval(fetchBook, 5000); // polling interval
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
-  const depth = Math.max(book.bids.length, book.asks.length);
-
   const maxQty = useMemo(() => {
+    if (!book) return 1;
     const all = [...book.bids, ...book.asks].map((l) => l.qty);
     return all.length ? Math.max(...all) : 1;
   }, [book]);
+
+  if (err) {
+    return (
+      <div style={{ maxWidth: 900, margin: "24px auto", color: "crimson" }}>
+        Error fetching book: {err}
+      </div>
+    );
+  }
+
+  if (!book)
+    return <div style={{ maxWidth: 900, margin: "24px auto" }}>Loading…</div>;
+
+  const depth = Math.max(book.bids.length, book.asks.length);
 
   return (
     <div
@@ -144,11 +164,7 @@ export default function OrderBookTable() {
         }}
       >
         <div
-          style={{
-            padding: "10px 12px",
-            fontWeight: 700,
-            letterSpacing: 0.3,
-          }}
+          style={{ padding: "10px 12px", fontWeight: 700, letterSpacing: 0.3 }}
         >
           Bids
         </div>
