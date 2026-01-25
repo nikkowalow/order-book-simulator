@@ -27,6 +27,9 @@ public:
 
     void print_book(std::ostream &os) const;
 
+    const auto &bids() const { return bids_; }
+    const auto &asks() const { return asks_; }
+
 private:
     using OrderList = std::list<Order>;
 

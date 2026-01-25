@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-
+#include "httplib.hpp"
+#include <mutex>
+#include <thread>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -111,13 +113,60 @@ int main(int argc, char **argv)
 
     OrderBook book;
     MatchingEngine engine(book);
+    std::mutex book_mtx;
 
     book.add_resting_order(Order{.id = 101, .side = Side::Buy, .price = 99, .qty = 10});
     book.add_resting_order(Order{.id = 102, .side = Side::Buy, .price = 99, .qty = 5});
     book.add_resting_order(Order{.id = 201, .side = Side::Sell, .price = 101, .qty = 7});
     book.add_resting_order(Order{.id = 202, .side = Side::Sell, .price = 102, .qty = 12});
 
-    // book.print_book(std::cout);
+    httplib::Server http;
+
+    http.Get("/book", [&](const httplib::Request &, httplib::Response &res)
+             {
+    std::ostringstream oss;
+
+    std::lock_guard<std::mutex> lk(book_mtx);
+
+    oss << "{ \"bids\": [";
+    bool first = true;
+
+    // OPTIONAL: limit depth to keep payload small
+    int depth = 20;
+    int i = 0;
+
+    for (const auto& [price, q] : book.bids()) {
+        if (i++ >= depth) break;
+        long long qty = 0;
+        for (const auto& o : q) qty += o.qty;
+
+        if (!first) oss << ","; 
+        oss << "{ \"price\": " << price << ", \"qty\": " << qty << " }";
+        first = false;
+    }
+
+    oss << "], \"asks\": [";
+    first = true;
+    i = 0;
+
+    for (const auto& [price, q] : book.asks()) {
+        if (i++ >= depth) break;
+        long long qty = 0;
+        for (const auto& o : q) qty += o.qty;
+
+        if (!first) oss << ",";
+        oss << "{ \"price\": " << price << ", \"qty\": " << qty << " }";
+        first = false;
+    }
+
+    oss << "] }";
+
+    res.set_header("Access-Control-Allow-Origin", "*");
+    res.set_content(oss.str(), "application/json"); });
+
+    std::thread http_thread([&]()
+                            { http.listen("0.0.0.0", 8080); });
+    http_thread.detach();
 
     size_t last_book_lines = 0;
 
@@ -223,7 +272,11 @@ int main(int argc, char **argv)
                 // Match and execute
                 auto trades = engine.process_limit_order(o);
 
-                // Send trades back
+                {
+                    std::lock_guard<std::mutex> lk(book_mtx);
+                    trades = engine.process_limit_order(o);
+                }
+
                 for (const auto &t : trades)
                 {
                     std::string tr = "TRADE price=" + std::to_string(t.price) +
@@ -232,7 +285,10 @@ int main(int argc, char **argv)
                                      " taker=" + std::to_string(t.taker_id) + "\n";
                     send_all(client_fd, tr);
                 }
-
+                {
+                    std::lock_guard<std::mutex> lk(book_mtx);
+                    book.print_book(std::cout);
+                }
                 // Print book on server for debugging
                 // book.print_book(std::cout);
                 auto frame = render_book_frame(book);
@@ -248,9 +304,17 @@ int main(int argc, char **argv)
             long long cancel_id;
             if (parse_cancel_line(msg, cancel_id))
             {
-                bool ok = book.cancel_order(cancel_id);
+                bool ok;
+                {
+                    std::lock_guard<std::mutex> lk(book_mtx);
+                    ok = book.cancel_order(cancel_id);
+                }
                 send_all(client_fd, ok ? "ACK CANCEL OK\n" : "ACK CANCEL NOT_FOUND\n");
-                book.print_book(std::cout);
+
+                {
+                    std::lock_guard<std::mutex> lk(book_mtx);
+                    book.print_book(std::cout);
+                }
                 continue;
             }
         }

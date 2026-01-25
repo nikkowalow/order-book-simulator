@@ -37,3 +37,7 @@ add_subdirectory(external/tabulate)
 target_include_directories(core PRIVATE ${CMAKE_SOURCE_DIR}/external/tabulate/include)
 
 target_link_libraries(tcp_client PRIVATE core)
+
+target_include_directories(tcp_server PRIVATE
+  ${CMAKE_SOURCE_DIR}/external/httplib
+)
