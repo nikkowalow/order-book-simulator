@@ -1,8 +1,4 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/osmium.dir/src/book/order_book.cpp.o"
-  "CMakeFiles/osmium.dir/src/book/order_book.cpp.o.d"
-  "CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o"
-  "CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o.d"
   "CMakeFiles/osmium.dir/src/main.cpp.o"
   "CMakeFiles/osmium.dir/src/main.cpp.o.d"
   "osmium"

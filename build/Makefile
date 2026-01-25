@@ -85,6 +85,51 @@ rebuild_cache:
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
 
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/opt/homebrew/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/opt/homebrew/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip/fast
+
 # The main all target
 all: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles /Users/nikkokowalow/dev/order-book-simulator/build//CMakeFiles/progress.marks
@@ -117,6 +162,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named core
+
+# Build rule for target.
+core: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 core
+.PHONY : core
+
+# fast build rule for target.
+core/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/build
+.PHONY : core/fast
+
+#=============================================================================
 # Target rules for targets named osmium
 
 # Build rule for target.
@@ -129,12 +187,38 @@ osmium/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/build
 .PHONY : osmium/fast
 
+#=============================================================================
+# Target rules for targets named tcp_server
+
+# Build rule for target.
+tcp_server: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tcp_server
+.PHONY : tcp_server
+
+# fast build rule for target.
+tcp_server/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_server.dir/build.make CMakeFiles/tcp_server.dir/build
+.PHONY : tcp_server/fast
+
+#=============================================================================
+# Target rules for targets named tcp_client
+
+# Build rule for target.
+tcp_client: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tcp_client
+.PHONY : tcp_client
+
+# fast build rule for target.
+tcp_client/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_client.dir/build.make CMakeFiles/tcp_client.dir/build
+.PHONY : tcp_client/fast
+
 src/book/order_book.o: src/book/order_book.cpp.o
 .PHONY : src/book/order_book.o
 
 # target to build an object file
 src/book/order_book.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/book/order_book.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/src/book/order_book.cpp.o
 .PHONY : src/book/order_book.cpp.o
 
 src/book/order_book.i: src/book/order_book.cpp.i
@@ -142,7 +226,7 @@ src/book/order_book.i: src/book/order_book.cpp.i
 
 # target to preprocess a source file
 src/book/order_book.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/book/order_book.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/src/book/order_book.cpp.i
 .PHONY : src/book/order_book.cpp.i
 
 src/book/order_book.s: src/book/order_book.cpp.s
@@ -150,7 +234,7 @@ src/book/order_book.s: src/book/order_book.cpp.s
 
 # target to generate assembly for a file
 src/book/order_book.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/book/order_book.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/src/book/order_book.cpp.s
 .PHONY : src/book/order_book.cpp.s
 
 src/engine/matching_engine.o: src/engine/matching_engine.cpp.o
@@ -158,7 +242,7 @@ src/engine/matching_engine.o: src/engine/matching_engine.cpp.o
 
 # target to build an object file
 src/engine/matching_engine.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/src/engine/matching_engine.cpp.o
 .PHONY : src/engine/matching_engine.cpp.o
 
 src/engine/matching_engine.i: src/engine/matching_engine.cpp.i
@@ -166,7 +250,7 @@ src/engine/matching_engine.i: src/engine/matching_engine.cpp.i
 
 # target to preprocess a source file
 src/engine/matching_engine.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/src/engine/matching_engine.cpp.i
 .PHONY : src/engine/matching_engine.cpp.i
 
 src/engine/matching_engine.s: src/engine/matching_engine.cpp.s
@@ -174,7 +258,7 @@ src/engine/matching_engine.s: src/engine/matching_engine.cpp.s
 
 # target to generate assembly for a file
 src/engine/matching_engine.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/src/engine/matching_engine.cpp.s
 .PHONY : src/engine/matching_engine.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -201,6 +285,54 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/server/tcp_client.o: src/server/tcp_client.cpp.o
+.PHONY : src/server/tcp_client.o
+
+# target to build an object file
+src/server/tcp_client.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_client.dir/build.make CMakeFiles/tcp_client.dir/src/server/tcp_client.cpp.o
+.PHONY : src/server/tcp_client.cpp.o
+
+src/server/tcp_client.i: src/server/tcp_client.cpp.i
+.PHONY : src/server/tcp_client.i
+
+# target to preprocess a source file
+src/server/tcp_client.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_client.dir/build.make CMakeFiles/tcp_client.dir/src/server/tcp_client.cpp.i
+.PHONY : src/server/tcp_client.cpp.i
+
+src/server/tcp_client.s: src/server/tcp_client.cpp.s
+.PHONY : src/server/tcp_client.s
+
+# target to generate assembly for a file
+src/server/tcp_client.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_client.dir/build.make CMakeFiles/tcp_client.dir/src/server/tcp_client.cpp.s
+.PHONY : src/server/tcp_client.cpp.s
+
+src/server/tcp_server.o: src/server/tcp_server.cpp.o
+.PHONY : src/server/tcp_server.o
+
+# target to build an object file
+src/server/tcp_server.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_server.dir/build.make CMakeFiles/tcp_server.dir/src/server/tcp_server.cpp.o
+.PHONY : src/server/tcp_server.cpp.o
+
+src/server/tcp_server.i: src/server/tcp_server.cpp.i
+.PHONY : src/server/tcp_server.i
+
+# target to preprocess a source file
+src/server/tcp_server.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_server.dir/build.make CMakeFiles/tcp_server.dir/src/server/tcp_server.cpp.i
+.PHONY : src/server/tcp_server.cpp.i
+
+src/server/tcp_server.s: src/server/tcp_server.cpp.s
+.PHONY : src/server/tcp_server.s
+
+# target to generate assembly for a file
+src/server/tcp_server.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tcp_server.dir/build.make CMakeFiles/tcp_server.dir/src/server/tcp_server.cpp.s
+.PHONY : src/server/tcp_server.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -208,8 +340,15 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
+	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... core"
 	@echo "... osmium"
+	@echo "... tcp_client"
+	@echo "... tcp_server"
 	@echo "... src/book/order_book.o"
 	@echo "... src/book/order_book.i"
 	@echo "... src/book/order_book.s"
@@ -219,6 +358,12 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/server/tcp_client.o"
+	@echo "... src/server/tcp_client.i"
+	@echo "... src/server/tcp_client.s"
+	@echo "... src/server/tcp_server.o"
+	@echo "... src/server/tcp_server.i"
+	@echo "... src/server/tcp_server.s"
 .PHONY : help
 
 

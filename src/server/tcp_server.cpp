@@ -11,6 +11,32 @@
 #include <types/types.hpp>
 #include <sstream>
 
+static size_t count_lines(const std::string &s)
+{
+    size_t n = 0;
+    for (char c : s)
+        if (c == '\n')
+            ++n;
+    if (!s.empty() && s.back() != '\n')
+        ++n;
+    return n;
+}
+
+static void move_cursor_up(size_t lines)
+{
+    if (lines == 0)
+        return;
+    // Same as repeating \033[F N times, but more efficient
+    std::cout << "\033[" << lines << "F";
+}
+
+static std::string render_book_frame(const OrderBook &book)
+{
+    std::ostringstream oss;
+    book.print_book(oss);
+    return oss.str();
+}
+
 static bool parse_cancel_line(const std::string &line, long long &order_id)
 {
     std::istringstream iss(line);
@@ -82,6 +108,7 @@ static bool parse_order_line(const std::string &line, Order &out)
 
 int main(int argc, char **argv)
 {
+
     OrderBook book;
     MatchingEngine engine(book);
 
@@ -90,7 +117,16 @@ int main(int argc, char **argv)
     book.add_resting_order(Order{.id = 201, .side = Side::Sell, .price = 101, .qty = 7});
     book.add_resting_order(Order{.id = 202, .side = Side::Sell, .price = 102, .qty = 12});
 
-    book.print_book(std::cout);
+    // book.print_book(std::cout);
+
+    size_t last_book_lines = 0;
+
+    // initial draw
+    {
+        auto frame = render_book_frame(book);
+        std::cout << frame << std::flush;
+        last_book_lines = count_lines(frame);
+    }
 
     int port = 9000;
     if (argc >= 2)
@@ -123,11 +159,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    std::cout << "Server listening on port " << port << "\n";
-    std::cout << "Waiting for a client...\n";
-
     while (true)
     {
+        // r.draw(render_book_frame(book));
         sockaddr_in client_addr{};
         socklen_t client_len = sizeof(client_addr);
 
@@ -138,8 +172,6 @@ int main(int argc, char **argv)
             continue;
         }
 
-        std::cout << "Client connected\n";
-
         char buf[1024];
 
         while (true)
@@ -149,7 +181,6 @@ int main(int argc, char **argv)
 
             if (n <= 0)
             {
-                std::cout << "Client disconnected\n";
                 break; // break inner loop only
             }
 
@@ -161,10 +192,10 @@ int main(int argc, char **argv)
                 msg.pop_back();
             }
 
-            std::cout << "Received: " << msg << "\n";
+            // std::cout << "Received: " << msg << "\n";
             if (msg == "PRINT")
             {
-                book.print_book(std::cout);
+                // book.print_book(std::cout);
 
                 // also send something back to the client so it sees a response
                 send_all(client_fd, "OK PRINTED\n");
@@ -203,7 +234,11 @@ int main(int argc, char **argv)
                 }
 
                 // Print book on server for debugging
-                book.print_book(std::cout);
+                // book.print_book(std::cout);
+                auto frame = render_book_frame(book);
+                std::cout << frame << std::flush;
+                move_cursor_up(last_book_lines);
+                last_book_lines = count_lines(frame);
 
                 // Send best quote snapshot back
                 send_best_quote(client_fd, book);
@@ -221,7 +256,6 @@ int main(int argc, char **argv)
         }
 
         close(client_fd);
-        std::cout << "Waiting for a client...\n";
     }
 
     close(server_fd);

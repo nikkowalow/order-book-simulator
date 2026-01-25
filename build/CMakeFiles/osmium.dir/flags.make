@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/Users/nikkokowalow/dev/order-book-simulator/include
+CXX_INCLUDES = -I/Users/nikkokowalow/dev/order-book-simulator/src -I/Users/nikkokowalow/dev/order-book-simulator/external/tabulate/include
 
 CXX_FLAGSarm64 = -std=gnu++17 -arch arm64
 

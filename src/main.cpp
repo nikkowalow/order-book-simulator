@@ -1,42 +1,63 @@
-#include <iostream>
+#include <atomic>
+#include <chrono>
+#include <random>
+#include <tabulate/table.hpp>
+#include <thread>
 
-#include "book/order_book.hpp"
-#include "engine/matching_engine.hpp"
+using namespace tabulate;
+using Row_t = Table::Row_t;
+std::atomic_bool keep_running(true);
 
-static const char *side_str(Side s)
+void waitingForWorkEnterKey()
 {
-    return (s == Side::Buy) ? "BUY" : "SELL";
-}
-
-static void submit(MatchingEngine &engine, OrderBook &book, const Order &o)
-{
-    std::cout << "\nSubmitting " << side_str(o.side)
-              << " id=" << o.id
-              << " qty=" << o.qty
-              << " @ " << o.price << "\n";
-
-    auto trades = engine.process_limit_order(o);
-
-    for (const auto &t : trades)
+    while (keep_running)
     {
-        std::cout << "TRADE price=" << t.price
-                  << " qty=" << t.qty
-                  << " maker=" << t.maker_id
-                  << " taker=" << t.taker_id
-                  << "\n";
+        if (std::cin.get() == 10)
+        {
+            keep_running = false;
+        }
     }
-
-    book.print_book(std::cout);
+    return;
 }
 
 int main()
 {
-    OrderBook book;
-    MatchingEngine engine(book);
+    Table top;
+    top.add_row({"BIDS", "ASKS"});
 
-    submit(engine, book, Order{.id = 1, .side = Side::Sell, .price = 101, .qty = 10});
-    submit(engine, book, Order{.id = 2, .side = Side::Sell, .price = 101, .qty = 5});
-    submit(engine, book, Order{.id = 3, .side = Side::Buy, .price = 101, .qty = 12});
+    top.format()
+        .width(50)
+        .corner(" ")
+        .border_top(" ")
+        .border_left(" ")
+        .border_right(" ")
+        // .border_bottom("-")
+        .border_top(" ")
+        .column_separator("|");
 
+    top[0].format().padding_top(1).padding_bottom(1).font_align(FontAlign::center).font_style({FontStyle::underline}).font_background_color(Color::green);
+
+    top[0][1].format().font_background_color(Color::red).font_color(Color::white);
+
+    // --- Book header (4 columns) ---
+    Table book;
+    book.add_row({"Size", "Bid", "Ask", "Size"});
+
+    book.format()
+        .font_style({FontStyle::bold})
+        .border_top("-")
+        .border_bottom("-")
+        .border_left("|")
+        .border_right("|")
+        .corner("+");
+
+    // Your chosen fixed widths (note: 24x4 is very wide; keep if you like it)
+    book.column(0).format().width(24).font_align(FontAlign::right);
+    book.column(1).format().width(24).font_align(FontAlign::right);
+    book.column(2).format().width(24).font_align(FontAlign::right);
+    book.column(3).format().width(24).font_align(FontAlign::right);
+
+    std::cout << top << std::endl;
+    std::cout << book << std::endl;
     return 0;
 }

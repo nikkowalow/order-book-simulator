@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # If you want to include headers from src/ (like "book/order_book.hpp")
 include_directories(src)
+# Include tabulate headers
+include_directories(${CMAKE_SOURCE_DIR}/external/tabulate/include)
 
 # Build core logic as a library (order book + matching engine)
 add_library(core
@@ -30,4 +32,8 @@ target_link_libraries(tcp_server PRIVATE core)
 add_executable(tcp_client
     src/server/tcp_client.cpp
 )
+add_subdirectory(external/tabulate)
+
+target_include_directories(core PRIVATE ${CMAKE_SOURCE_DIR}/external/tabulate/include)
+
 target_link_libraries(tcp_client PRIVATE core)
