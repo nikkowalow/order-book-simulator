@@ -14,6 +14,7 @@ include_directories(${CMAKE_SOURCE_DIR}/external/tabulate/include)
 add_library(core
     src/book/order_book.cpp
     src/engine/matching_engine.cpp
+    src/sim/seed_book.cpp
 )
 
 # Demo binary (your old single-process main)

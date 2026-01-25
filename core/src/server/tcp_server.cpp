@@ -12,6 +12,10 @@
 #include <engine/matching_engine.hpp>
 #include <types/types.hpp>
 #include <sstream>
+#include <atomic>
+#include <sim/seed_book.hpp>
+
+static std::atomic<long long> next_order_id{1000};
 
 static size_t count_lines(const std::string &s)
 {
@@ -112,15 +116,121 @@ int main(int argc, char **argv)
 {
 
     OrderBook book;
+    seed_book(book);
     MatchingEngine engine(book);
     std::mutex book_mtx;
 
-    book.add_resting_order(Order{.id = 101, .side = Side::Buy, .price = 99, .qty = 10});
-    book.add_resting_order(Order{.id = 102, .side = Side::Buy, .price = 99, .qty = 5});
-    book.add_resting_order(Order{.id = 201, .side = Side::Sell, .price = 101, .qty = 7});
-    book.add_resting_order(Order{.id = 202, .side = Side::Sell, .price = 102, .qty = 12});
-
     httplib::Server http;
+
+    // CORS preflight
+    http.Options(".*", [](const httplib::Request &, httplib::Response &res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.status = 204;
+    });
+
+    // POST /order - submit a limit order
+    http.Post("/order", [&](const httplib::Request &req, httplib::Response &res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        std::cout << "Received /order request: " << req.body << "\n";
+        std::string body = req.body;
+        std::string side_str;
+        int price = 0;
+        long long qty = 0;
+
+        // Parse "side"
+        auto side_pos = body.find("\"side\"");
+        if (side_pos != std::string::npos) {
+            auto colon = body.find(':', side_pos);
+            auto q1 = body.find('"', colon);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                side_str = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        // Parse "price"
+        auto price_pos = body.find("\"price\"");
+        if (price_pos != std::string::npos) {
+            auto colon = body.find(':', price_pos);
+            std::string num;
+            for (size_t i = colon + 1; i < body.size(); ++i) {
+                if (std::isdigit(body[i])) num += body[i];
+                else if (!num.empty()) break;
+            }
+            if (!num.empty()) price = std::stoi(num);
+        }
+
+        // Parse "qty"
+        auto qty_pos = body.find("\"qty\"");
+        if (qty_pos != std::string::npos) {
+            auto colon = body.find(':', qty_pos);
+            std::string num;
+            for (size_t i = colon + 1; i < body.size(); ++i) {
+                if (std::isdigit(body[i])) num += body[i];
+                else if (!num.empty()) break;
+            }
+            if (!num.empty()) qty = std::stoll(num);
+        }
+
+        if ((side_str != "BUY" && side_str != "SELL") || price <= 0 || qty <= 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid order\"}", "application/json");
+            return;
+        }
+
+        long long id = next_order_id++;
+        Order o{.id = id, .side = (side_str == "BUY" ? Side::Buy : Side::Sell), .price = price, .qty = qty};
+
+        std::vector<Trade> trades;
+        {
+            std::lock_guard<std::mutex> lk(book_mtx);
+            trades = engine.process_limit_order(o);
+        }
+
+        std::ostringstream oss;
+        oss << "{\"id\": " << id << ", \"trades\": [";
+        bool first = true;
+        for (const auto& t : trades) {
+            if (!first) oss << ",";
+            oss << "{\"price\": " << t.price << ", \"qty\": " << t.qty << "}";
+            first = false;
+        }
+        oss << "]}";
+        res.set_content(oss.str(), "application/json");
+    });
+
+    // POST /cancel - cancel an order by id
+    http.Post("/cancel", [&](const httplib::Request &req, httplib::Response &res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+
+        std::string body = req.body;
+        long long id = 0;
+
+        auto id_pos = body.find("\"id\"");
+        if (id_pos != std::string::npos) {
+            auto colon = body.find(':', id_pos);
+            std::string num;
+            for (size_t i = colon + 1; i < body.size(); ++i) {
+                if (std::isdigit(body[i])) num += body[i];
+                else if (!num.empty()) break;
+            }
+            if (!num.empty()) id = std::stoll(num);
+        }
+
+        if (id <= 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"Invalid id\"}", "application/json");
+            return;
+        }
+
+        bool ok;
+        {
+            std::lock_guard<std::mutex> lk(book_mtx);
+            ok = book.cancel_order(id);
+        }
+        res.set_content(ok ? "{\"ok\": true}" : "{\"ok\": false}", "application/json");
+    });
 
     http.Get("/book", [&](const httplib::Request &, httplib::Response &res)
              {
