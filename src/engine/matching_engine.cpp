@@ -34,6 +34,7 @@ std::vector<Trade> MatchingEngine::process_limit_order(const Order &incoming)
 void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
 {
     // Buy matches against asks at prices <= taker.price
+    auto *q = book_.best_ask_queue();
     while (taker.qty > 0)
     {
         auto best_ask = book_.best_ask();
@@ -44,7 +45,6 @@ void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
         if (ask_price > taker.price)
             break;
 
-        auto *q = book_.best_ask_queue();
         if (!q)
             break;
 
@@ -76,6 +76,7 @@ void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
 void MatchingEngine::match_sell(Order &taker, std::vector<Trade> &trades)
 {
     // Sell matches against bids at prices >= taker.price
+    auto *q = book_.best_bid_queue();
     while (taker.qty > 0)
     {
         auto best_bid = book_.best_bid();
@@ -86,7 +87,6 @@ void MatchingEngine::match_sell(Order &taker, std::vector<Trade> &trades)
         if (bid_price < taker.price)
             break;
 
-        auto *q = book_.best_bid_queue();
         if (!q)
             break;
 

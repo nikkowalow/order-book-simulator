@@ -1,35 +1,48 @@
 #pragma once
 
 #include <map>
-#include <deque>
+#include <list>
+#include <unordered_map>
 #include <optional>
 #include <functional>
 #include <ostream>
 
-#include "../types/types.hpp"
+#include "types/types.hpp"
 
 class OrderBook
 {
 public:
-    // Resting order insertion
     void add_resting_order(const Order &o);
 
-    // Best prices
+    bool cancel_order(long long order_id);
+
     std::optional<int> best_bid() const;
     std::optional<int> best_ask() const;
 
-    // Access top-of-book queues (used by MatchingEngine)
-    std::deque<Order> *best_bid_queue();
-    std::deque<Order> *best_ask_queue();
+    std::list<Order> *best_bid_queue();
+    std::list<Order> *best_ask_queue();
 
-    // Remove empty top levels after matching
     void cleanup_best_bid_level_if_empty();
     void cleanup_best_ask_level_if_empty();
 
-    // Debug printing
     void print_book(std::ostream &os) const;
 
 private:
-    std::map<int, std::deque<Order>, std::greater<int>> bids_;
-    std::map<int, std::deque<Order>> asks_;
+    using OrderList = std::list<Order>;
+
+    struct Locator
+    {
+        Side side;
+        int price;
+        OrderList::iterator it;
+    };
+
+    // bids: high -> low
+    std::map<int, OrderList, std::greater<int>> bids_;
+
+    // asks: low -> high
+    std::map<int, OrderList> asks_;
+
+    // order_id -> where it lives
+    std::unordered_map<long long, Locator> index_;
 };

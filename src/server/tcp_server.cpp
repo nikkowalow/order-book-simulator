@@ -11,6 +11,17 @@
 #include <types/types.hpp>
 #include <sstream>
 
+static bool parse_cancel_line(const std::string &line, long long &order_id)
+{
+    std::istringstream iss(line);
+    std::string cmd;
+    iss >> cmd;
+    if (cmd != "CANCEL")
+        return false;
+    iss >> order_id;
+    return !iss.fail();
+}
+
 static bool send_all(int fd, const std::string &msg)
 {
     const char *data = msg.c_str();
@@ -197,6 +208,14 @@ int main(int argc, char **argv)
                 // Send best quote snapshot back
                 send_best_quote(client_fd, book);
 
+                continue;
+            }
+            long long cancel_id;
+            if (parse_cancel_line(msg, cancel_id))
+            {
+                bool ok = book.cancel_order(cancel_id);
+                send_all(client_fd, ok ? "ACK CANCEL OK\n" : "ACK CANCEL NOT_FOUND\n");
+                book.print_book(std::cout);
                 continue;
             }
         }
