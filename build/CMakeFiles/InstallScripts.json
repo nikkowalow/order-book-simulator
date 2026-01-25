@@ -1,7 +1,7 @@
 {
 	"InstallScripts" : 
 	[
-		"/Users/nikkokowalow/dev/portfolio-optimization-engine/build/cmake_install.cmake"
+		"/Users/nikkokowalow/dev/order-book-simulator/build/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

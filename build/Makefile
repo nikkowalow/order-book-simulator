@@ -57,10 +57,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/nikkokowalow/dev/portfolio-optimization-engine
+CMAKE_SOURCE_DIR = /Users/nikkokowalow/dev/order-book-simulator
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/nikkokowalow/dev/portfolio-optimization-engine/build
+CMAKE_BINARY_DIR = /Users/nikkokowalow/dev/order-book-simulator/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles /Users/nikkokowalow/dev/portfolio-optimization-engine/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles /Users/nikkokowalow/dev/order-book-simulator/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -129,53 +129,53 @@ osmium/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/build
 .PHONY : osmium/fast
 
-src/DataLoader.o: src/DataLoader.cpp.o
-.PHONY : src/DataLoader.o
+src/book/order_book.o: src/book/order_book.cpp.o
+.PHONY : src/book/order_book.o
 
 # target to build an object file
-src/DataLoader.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/DataLoader.cpp.o
-.PHONY : src/DataLoader.cpp.o
+src/book/order_book.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/book/order_book.cpp.o
+.PHONY : src/book/order_book.cpp.o
 
-src/DataLoader.i: src/DataLoader.cpp.i
-.PHONY : src/DataLoader.i
+src/book/order_book.i: src/book/order_book.cpp.i
+.PHONY : src/book/order_book.i
 
 # target to preprocess a source file
-src/DataLoader.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/DataLoader.cpp.i
-.PHONY : src/DataLoader.cpp.i
+src/book/order_book.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/book/order_book.cpp.i
+.PHONY : src/book/order_book.cpp.i
 
-src/DataLoader.s: src/DataLoader.cpp.s
-.PHONY : src/DataLoader.s
+src/book/order_book.s: src/book/order_book.cpp.s
+.PHONY : src/book/order_book.s
 
 # target to generate assembly for a file
-src/DataLoader.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/DataLoader.cpp.s
-.PHONY : src/DataLoader.cpp.s
+src/book/order_book.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/book/order_book.cpp.s
+.PHONY : src/book/order_book.cpp.s
 
-src/PortfolioOptimizer.o: src/PortfolioOptimizer.cpp.o
-.PHONY : src/PortfolioOptimizer.o
+src/engine/matching_engine.o: src/engine/matching_engine.cpp.o
+.PHONY : src/engine/matching_engine.o
 
 # target to build an object file
-src/PortfolioOptimizer.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o
-.PHONY : src/PortfolioOptimizer.cpp.o
+src/engine/matching_engine.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o
+.PHONY : src/engine/matching_engine.cpp.o
 
-src/PortfolioOptimizer.i: src/PortfolioOptimizer.cpp.i
-.PHONY : src/PortfolioOptimizer.i
+src/engine/matching_engine.i: src/engine/matching_engine.cpp.i
+.PHONY : src/engine/matching_engine.i
 
 # target to preprocess a source file
-src/PortfolioOptimizer.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.i
-.PHONY : src/PortfolioOptimizer.cpp.i
+src/engine/matching_engine.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.i
+.PHONY : src/engine/matching_engine.cpp.i
 
-src/PortfolioOptimizer.s: src/PortfolioOptimizer.cpp.s
-.PHONY : src/PortfolioOptimizer.s
+src/engine/matching_engine.s: src/engine/matching_engine.cpp.s
+.PHONY : src/engine/matching_engine.s
 
 # target to generate assembly for a file
-src/PortfolioOptimizer.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.s
-.PHONY : src/PortfolioOptimizer.cpp.s
+src/engine/matching_engine.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/osmium.dir/build.make CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.s
+.PHONY : src/engine/matching_engine.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
@@ -210,12 +210,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... osmium"
-	@echo "... src/DataLoader.o"
-	@echo "... src/DataLoader.i"
-	@echo "... src/DataLoader.s"
-	@echo "... src/PortfolioOptimizer.o"
-	@echo "... src/PortfolioOptimizer.i"
-	@echo "... src/PortfolioOptimizer.s"
+	@echo "... src/book/order_book.o"
+	@echo "... src/book/order_book.i"
+	@echo "... src/book/order_book.s"
+	@echo "... src/engine/matching_engine.o"
+	@echo "... src/engine/matching_engine.i"
+	@echo "... src/engine/matching_engine.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

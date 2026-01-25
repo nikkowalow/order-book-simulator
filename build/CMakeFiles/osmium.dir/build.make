@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/nikkokowalow/dev/portfolio-optimization-engine
+CMAKE_SOURCE_DIR = /Users/nikkokowalow/dev/order-book-simulator
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/nikkokowalow/dev/portfolio-optimization-engine/build
+CMAKE_BINARY_DIR = /Users/nikkokowalow/dev/order-book-simulator/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/osmium.dir/depend.make
@@ -73,62 +73,62 @@ CMakeFiles/osmium.dir/codegen:
 .PHONY : CMakeFiles/osmium.dir/codegen
 
 CMakeFiles/osmium.dir/src/main.cpp.o: CMakeFiles/osmium.dir/flags.make
-CMakeFiles/osmium.dir/src/main.cpp.o: /Users/nikkokowalow/dev/portfolio-optimization-engine/src/main.cpp
+CMakeFiles/osmium.dir/src/main.cpp.o: /Users/nikkokowalow/dev/order-book-simulator/src/main.cpp
 CMakeFiles/osmium.dir/src/main.cpp.o: CMakeFiles/osmium.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/osmium.dir/src/main.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/osmium.dir/src/main.cpp.o -MF CMakeFiles/osmium.dir/src/main.cpp.o.d -o CMakeFiles/osmium.dir/src/main.cpp.o -c /Users/nikkokowalow/dev/portfolio-optimization-engine/src/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/osmium.dir/src/main.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/osmium.dir/src/main.cpp.o -MF CMakeFiles/osmium.dir/src/main.cpp.o.d -o CMakeFiles/osmium.dir/src/main.cpp.o -c /Users/nikkokowalow/dev/order-book-simulator/src/main.cpp
 
 CMakeFiles/osmium.dir/src/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/osmium.dir/src/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nikkokowalow/dev/portfolio-optimization-engine/src/main.cpp > CMakeFiles/osmium.dir/src/main.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nikkokowalow/dev/order-book-simulator/src/main.cpp > CMakeFiles/osmium.dir/src/main.cpp.i
 
 CMakeFiles/osmium.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/osmium.dir/src/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nikkokowalow/dev/portfolio-optimization-engine/src/main.cpp -o CMakeFiles/osmium.dir/src/main.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nikkokowalow/dev/order-book-simulator/src/main.cpp -o CMakeFiles/osmium.dir/src/main.cpp.s
 
-CMakeFiles/osmium.dir/src/DataLoader.cpp.o: CMakeFiles/osmium.dir/flags.make
-CMakeFiles/osmium.dir/src/DataLoader.cpp.o: /Users/nikkokowalow/dev/portfolio-optimization-engine/src/DataLoader.cpp
-CMakeFiles/osmium.dir/src/DataLoader.cpp.o: CMakeFiles/osmium.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/osmium.dir/src/DataLoader.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/osmium.dir/src/DataLoader.cpp.o -MF CMakeFiles/osmium.dir/src/DataLoader.cpp.o.d -o CMakeFiles/osmium.dir/src/DataLoader.cpp.o -c /Users/nikkokowalow/dev/portfolio-optimization-engine/src/DataLoader.cpp
+CMakeFiles/osmium.dir/src/book/order_book.cpp.o: CMakeFiles/osmium.dir/flags.make
+CMakeFiles/osmium.dir/src/book/order_book.cpp.o: /Users/nikkokowalow/dev/order-book-simulator/src/book/order_book.cpp
+CMakeFiles/osmium.dir/src/book/order_book.cpp.o: CMakeFiles/osmium.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/osmium.dir/src/book/order_book.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/osmium.dir/src/book/order_book.cpp.o -MF CMakeFiles/osmium.dir/src/book/order_book.cpp.o.d -o CMakeFiles/osmium.dir/src/book/order_book.cpp.o -c /Users/nikkokowalow/dev/order-book-simulator/src/book/order_book.cpp
 
-CMakeFiles/osmium.dir/src/DataLoader.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/osmium.dir/src/DataLoader.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nikkokowalow/dev/portfolio-optimization-engine/src/DataLoader.cpp > CMakeFiles/osmium.dir/src/DataLoader.cpp.i
+CMakeFiles/osmium.dir/src/book/order_book.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/osmium.dir/src/book/order_book.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nikkokowalow/dev/order-book-simulator/src/book/order_book.cpp > CMakeFiles/osmium.dir/src/book/order_book.cpp.i
 
-CMakeFiles/osmium.dir/src/DataLoader.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/osmium.dir/src/DataLoader.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nikkokowalow/dev/portfolio-optimization-engine/src/DataLoader.cpp -o CMakeFiles/osmium.dir/src/DataLoader.cpp.s
+CMakeFiles/osmium.dir/src/book/order_book.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/osmium.dir/src/book/order_book.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nikkokowalow/dev/order-book-simulator/src/book/order_book.cpp -o CMakeFiles/osmium.dir/src/book/order_book.cpp.s
 
-CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o: CMakeFiles/osmium.dir/flags.make
-CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o: /Users/nikkokowalow/dev/portfolio-optimization-engine/src/PortfolioOptimizer.cpp
-CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o: CMakeFiles/osmium.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o -MF CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o.d -o CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o -c /Users/nikkokowalow/dev/portfolio-optimization-engine/src/PortfolioOptimizer.cpp
+CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o: CMakeFiles/osmium.dir/flags.make
+CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o: /Users/nikkokowalow/dev/order-book-simulator/src/engine/matching_engine.cpp
+CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o: CMakeFiles/osmium.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o -MF CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o.d -o CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o -c /Users/nikkokowalow/dev/order-book-simulator/src/engine/matching_engine.cpp
 
-CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nikkokowalow/dev/portfolio-optimization-engine/src/PortfolioOptimizer.cpp > CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.i
+CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nikkokowalow/dev/order-book-simulator/src/engine/matching_engine.cpp > CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.i
 
-CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nikkokowalow/dev/portfolio-optimization-engine/src/PortfolioOptimizer.cpp -o CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.s
+CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nikkokowalow/dev/order-book-simulator/src/engine/matching_engine.cpp -o CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.s
 
 # Object files for target osmium
 osmium_OBJECTS = \
 "CMakeFiles/osmium.dir/src/main.cpp.o" \
-"CMakeFiles/osmium.dir/src/DataLoader.cpp.o" \
-"CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o"
+"CMakeFiles/osmium.dir/src/book/order_book.cpp.o" \
+"CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o"
 
 # External object files for target osmium
 osmium_EXTERNAL_OBJECTS =
 
 osmium: CMakeFiles/osmium.dir/src/main.cpp.o
-osmium: CMakeFiles/osmium.dir/src/DataLoader.cpp.o
-osmium: CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o
+osmium: CMakeFiles/osmium.dir/src/book/order_book.cpp.o
+osmium: CMakeFiles/osmium.dir/src/engine/matching_engine.cpp.o
 osmium: CMakeFiles/osmium.dir/build.make
 osmium: CMakeFiles/osmium.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable osmium"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable osmium"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/osmium.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -140,6 +140,6 @@ CMakeFiles/osmium.dir/clean:
 .PHONY : CMakeFiles/osmium.dir/clean
 
 CMakeFiles/osmium.dir/depend:
-	cd /Users/nikkokowalow/dev/portfolio-optimization-engine/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/nikkokowalow/dev/portfolio-optimization-engine /Users/nikkokowalow/dev/portfolio-optimization-engine /Users/nikkokowalow/dev/portfolio-optimization-engine/build /Users/nikkokowalow/dev/portfolio-optimization-engine/build /Users/nikkokowalow/dev/portfolio-optimization-engine/build/CMakeFiles/osmium.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /Users/nikkokowalow/dev/order-book-simulator/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/nikkokowalow/dev/order-book-simulator /Users/nikkokowalow/dev/order-book-simulator /Users/nikkokowalow/dev/order-book-simulator/build /Users/nikkokowalow/dev/order-book-simulator/build /Users/nikkokowalow/dev/order-book-simulator/build/CMakeFiles/osmium.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/osmium.dir/depend
 
