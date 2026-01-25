@@ -42,3 +42,7 @@ target_link_libraries(tcp_client PRIVATE core)
 target_include_directories(tcp_server PRIVATE
   ${CMAKE_SOURCE_DIR}/external/httplib
 )
+
+target_sources(tcp_server PRIVATE
+  src/server/http_handlers.cpp
+)

@@ -14,6 +14,8 @@
 #include <sstream>
 #include <atomic>
 #include <sim/seed_book.hpp>
+#include <server/http_handlers.hpp>
+
 
 static std::atomic<long long> next_order_id{1000};
 
@@ -133,54 +135,16 @@ int main(int argc, char **argv)
     // POST /order - submit a limit order
     http.Post("/order", [&](const httplib::Request &req, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
-        std::cout << "Received /order request: " << req.body << "\n";
-        std::string body = req.body;
-        std::string side_str;
-        int price = 0;
-        long long qty = 0;
 
-        // Parse "side"
-        auto side_pos = body.find("\"side\"");
-        if (side_pos != std::string::npos) {
-            auto colon = body.find(':', side_pos);
-            auto q1 = body.find('"', colon);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos)
-                side_str = body.substr(q1 + 1, q2 - q1 - 1);
-        }
-
-        // Parse "price"
-        auto price_pos = body.find("\"price\"");
-        if (price_pos != std::string::npos) {
-            auto colon = body.find(':', price_pos);
-            std::string num;
-            for (size_t i = colon + 1; i < body.size(); ++i) {
-                if (std::isdigit(body[i])) num += body[i];
-                else if (!num.empty()) break;
-            }
-            if (!num.empty()) price = std::stoi(num);
-        }
-
-        // Parse "qty"
-        auto qty_pos = body.find("\"qty\"");
-        if (qty_pos != std::string::npos) {
-            auto colon = body.find(':', qty_pos);
-            std::string num;
-            for (size_t i = colon + 1; i < body.size(); ++i) {
-                if (std::isdigit(body[i])) num += body[i];
-                else if (!num.empty()) break;
-            }
-            if (!num.empty()) qty = std::stoll(num);
-        }
-
-        if ((side_str != "BUY" && side_str != "SELL") || price <= 0 || qty <= 0) {
+        OrderRequest r;
+        if (!parse_order_json(req.body, r)) {
             res.status = 400;
-            res.set_content("{\"error\": \"Invalid order\"}", "application/json");
+            res.set_content(json_error("Invalid order"), "application/json");
             return;
         }
 
         long long id = next_order_id++;
-        Order o{.id = id, .side = (side_str == "BUY" ? Side::Buy : Side::Sell), .price = price, .qty = qty};
+        Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty};
 
         std::vector<Trade> trades;
         {
@@ -188,48 +152,27 @@ int main(int argc, char **argv)
             trades = engine.process_limit_order(o);
         }
 
-        std::ostringstream oss;
-        oss << "{\"id\": " << id << ", \"trades\": [";
-        bool first = true;
-        for (const auto& t : trades) {
-            if (!first) oss << ",";
-            oss << "{\"price\": " << t.price << ", \"qty\": " << t.qty << "}";
-            first = false;
-        }
-        oss << "]}";
-        res.set_content(oss.str(), "application/json");
+        res.set_content(json_order_result(id, trades), "application/json");
     });
 
     // POST /cancel - cancel an order by id
     http.Post("/cancel", [&](const httplib::Request &req, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
 
-        std::string body = req.body;
-        long long id = 0;
-
-        auto id_pos = body.find("\"id\"");
-        if (id_pos != std::string::npos) {
-            auto colon = body.find(':', id_pos);
-            std::string num;
-            for (size_t i = colon + 1; i < body.size(); ++i) {
-                if (std::isdigit(body[i])) num += body[i];
-                else if (!num.empty()) break;
-            }
-            if (!num.empty()) id = std::stoll(num);
-        }
-
-        if (id <= 0) {
+        CancelRequest r;
+        if (!parse_cancel_json(req.body, r)) {
             res.status = 400;
-            res.set_content("{\"error\": \"Invalid id\"}", "application/json");
+            res.set_content(json_error("Invalid id"), "application/json");
             return;
         }
 
-        bool ok;
+        bool ok = false;
         {
             std::lock_guard<std::mutex> lk(book_mtx);
-            ok = book.cancel_order(id);
+            ok = book.cancel_order(r.id);
         }
-        res.set_content(ok ? "{\"ok\": true}" : "{\"ok\": false}", "application/json");
+
+        res.set_content(json_ok(ok), "application/json");
     });
 
     http.Get("/book", [&](const httplib::Request &, httplib::Response &res)
