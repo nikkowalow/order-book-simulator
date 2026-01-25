@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-
+import { BarCell } from "./components/BarCell";
 type Side = "bid" | "ask";
 
 type Level = {
@@ -12,10 +12,6 @@ type Book = {
   asks: Level[]; // ascending by price
 };
 
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
-
 function fmt(n: number, decimals = 0) {
   return n.toLocaleString(undefined, {
     minimumFractionDigits: decimals,
@@ -23,74 +19,53 @@ function fmt(n: number, decimals = 0) {
   });
 }
 
-function BarCell({
-  side,
-  value,
-  max,
-  children,
-}: {
-  side: Side;
-  value: number;
-  max: number;
-  children: React.ReactNode;
-}) {
-  const pct = max <= 0 ? 0 : clamp((value / max) * 100, 0, 100);
-
-  const barStyle: React.CSSProperties =
-    side === "bid"
-      ? {
-          left: 0,
-          width: `${pct}%`,
-          background:
-            "linear-gradient(90deg, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0.40) 100%)",
-        }
-      : {
-          right: 0,
-          width: `${pct}%`,
-          background:
-            "linear-gradient(270deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.40) 100%)",
-        };
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        height: 28,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 10px",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          borderRadius: 6,
-          transition: "width 180ms ease",
-          ...barStyle,
-        }}
-      />
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          zIndex: 1,
-          display: "flex",
-          justifyContent: "space-between",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export default function OrderBookTable() {
   const [book, setBook] = useState<Book | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [price, setPrice] = useState("");
+  const [qty, setQty] = useState("");
+  const [cancelId, setCancelId] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+
+  const submitOrder = async (side: "BUY" | "SELL") => {
+    const p = parseInt(price, 10);
+    const q = parseInt(qty, 10);
+    if (!p || !q || p <= 0 || q <= 0) {
+      setStatus("Invalid price or qty");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:8080/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, price: p, qty: q }),
+      });
+      const data = await res.json();
+      console.log(data);
+      setStatus(`Order ${data.id}: ${data.trades?.length || 0} trades`);
+    } catch (e: any) {
+      setStatus(`Error: ${e.message}`);
+    }
+  };
+
+  const submitCancel = async () => {
+    const id = parseInt(cancelId, 10);
+    if (!id || id <= 0) {
+      setStatus("Invalid order ID");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:8080/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      setStatus(data.ok ? "Cancelled" : "Not found");
+    } catch (e: any) {
+      setStatus(`Error: ${e.message}`);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +90,7 @@ export default function OrderBookTable() {
     };
 
     fetchBook();
-    const id = setInterval(fetchBook, 5000); // polling interval
+    const id = setInterval(fetchBook, 5); // polling interval
 
     return () => {
       cancelled = true;
@@ -142,161 +117,258 @@ export default function OrderBookTable() {
 
   const depth = Math.max(book.bids.length, book.asks.length);
 
+  const inputStyle: React.CSSProperties = {
+    padding: "8px 12px",
+    border: "1px solid rgba(0,0,0,0.15)",
+    borderRadius: 6,
+    fontSize: 14,
+    width: 80,
+  };
+
+  const btnBase: React.CSSProperties = {
+    padding: "8px 16px",
+    border: "none",
+    borderRadius: 6,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  };
+
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: 900,
-        margin: "24px auto",
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 14,
-        overflow: "hidden",
-        background: "white",
-      }}
-    >
-      {/* Header */}
+    <>
+      {/* Order Form */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          background: "rgba(0,0,0,0.02)",
+          maxWidth: 900,
+          margin: "24px auto 16px",
+          padding: 16,
+          background: "white",
+          border: "1px solid rgba(0,0,0,0.08)",
+          borderRadius: 14,
         }}
       >
         <div
-          style={{ padding: "10px 12px", fontWeight: 700, letterSpacing: 0.3 }}
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
         >
-          Bids
+          <input
+            type="number"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            style={inputStyle}
+          />
+          <input
+            type="number"
+            placeholder="Qty"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            style={inputStyle}
+          />
+          <button
+            onClick={() => submitOrder("BUY")}
+            style={{ ...btnBase, background: "rgb(22,163,74)", color: "white" }}
+          >
+            Buy
+          </button>
+          <button
+            onClick={() => submitOrder("SELL")}
+            style={{ ...btnBase, background: "rgb(220,38,38)", color: "white" }}
+          >
+            Sell
+          </button>
+          <div
+            style={{ width: 1, height: 32, background: "rgba(0,0,0,0.1)" }}
+          />
+          <input
+            type="number"
+            placeholder="Order ID"
+            value={cancelId}
+            onChange={(e) => setCancelId(e.target.value)}
+            style={inputStyle}
+          />
+          <button
+            onClick={submitCancel}
+            style={{
+              ...btnBase,
+              background: "rgba(0,0,0,0.08)",
+              color: "rgba(0,0,0,0.7)",
+            }}
+          >
+            Cancel
+          </button>
+          {status && (
+            <span style={{ fontSize: 13, color: "rgba(0,0,0,0.6)" }}>
+              {status}
+            </span>
+          )}
         </div>
+      </div>
+
+      {/* Order Book */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 900,
+          margin: "0 auto",
+          border: "1px solid rgba(0,0,0,0.08)",
+          borderRadius: 14,
+          overflow: "hidden",
+          background: "white",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+            background: "rgba(0,0,0,0.02)",
+          }}
+        >
+          <div
+            style={{
+              padding: "10px 12px",
+              fontWeight: 700,
+              letterSpacing: 0.3,
+            }}
+          >
+            Bids
+          </div>
+          <div
+            style={{
+              padding: "10px 12px",
+              fontWeight: 700,
+              letterSpacing: 0.3,
+              textAlign: "right",
+            }}
+          >
+            Asks
+          </div>
+        </div>
+
+        {/* Column labels */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            borderBottom: "1px solid rgba(0,0,0,0.06)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              color: "rgba(0,0,0,0.55)",
+              fontSize: 12,
+            }}
+          >
+            <span>Size</span>
+            <span>Bid</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              color: "rgba(0,0,0,0.55)",
+              fontSize: 12,
+            }}
+          >
+            <span>Ask</span>
+            <span>Size</span>
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+          <div style={{ borderRight: "1px solid rgba(0,0,0,0.06)" }}>
+            {Array.from({ length: depth }, (_, i) => {
+              const lvl = book.bids[i];
+              if (!lvl) {
+                return (
+                  <div
+                    key={`bid-empty-${i}`}
+                    style={{
+                      height: 28,
+                      borderBottom: "1px solid rgba(0,0,0,0.04)",
+                    }}
+                  />
+                );
+              }
+
+              return (
+                <div
+                  key={`bid-${lvl.price}`}
+                  style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+                >
+                  <BarCell side="bid" value={lvl.qty} max={maxQty}>
+                    <span style={{ color: "rgba(0,0,0,0.85)" }}>
+                      {fmt(lvl.qty)}
+                    </span>
+                    <span style={{ color: "rgb(22,163,74)", fontWeight: 650 }}>
+                      {fmt(lvl.price, 1)}
+                    </span>
+                  </BarCell>
+                </div>
+              );
+            })}
+          </div>
+
+          <div>
+            {Array.from({ length: depth }, (_, i) => {
+              const lvl = book.asks[i];
+              if (!lvl) {
+                return (
+                  <div
+                    key={`ask-empty-${i}`}
+                    style={{
+                      height: 28,
+                      borderBottom: "1px solid rgba(0,0,0,0.04)",
+                    }}
+                  />
+                );
+              }
+
+              return (
+                <div
+                  key={`ask-${lvl.price}`}
+                  style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+                >
+                  <BarCell side="ask" value={lvl.qty} max={maxQty}>
+                    <span style={{ color: "rgb(220,38,38)", fontWeight: 650 }}>
+                      {fmt(lvl.price, 1)}
+                    </span>
+                    <span style={{ color: "rgba(0,0,0,0.85)" }}>
+                      {fmt(lvl.qty)}
+                    </span>
+                  </BarCell>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
         <div
           style={{
             padding: "10px 12px",
-            fontWeight: 700,
-            letterSpacing: 0.3,
-            textAlign: "right",
-          }}
-        >
-          Asks
-        </div>
-      </div>
-
-      {/* Column labels */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
-        }}
-      >
-        <div
-          style={{
+            fontSize: 12,
+            color: "rgba(0,0,0,0.55)",
+            background: "rgba(0,0,0,0.02)",
             display: "flex",
             justifyContent: "space-between",
-            padding: "8px 12px",
-            color: "rgba(0,0,0,0.55)",
-            fontSize: 12,
           }}
         >
-          <span>Size</span>
-          <span>Bid</span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "8px 12px",
-            color: "rgba(0,0,0,0.55)",
-            fontSize: 12,
-          }}
-        >
-          <span>Ask</span>
-          <span>Size</span>
+          <span>Depth: {depth}</span>
+          <span>Max size: {fmt(maxQty)}</span>
         </div>
       </div>
-
-      {/* Rows */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-        <div style={{ borderRight: "1px solid rgba(0,0,0,0.06)" }}>
-          {Array.from({ length: depth }, (_, i) => {
-            const lvl = book.bids[i];
-            if (!lvl) {
-              return (
-                <div
-                  key={`bid-empty-${i}`}
-                  style={{
-                    height: 28,
-                    borderBottom: "1px solid rgba(0,0,0,0.04)",
-                  }}
-                />
-              );
-            }
-
-            return (
-              <div
-                key={`bid-${lvl.price}`}
-                style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
-              >
-                <BarCell side="bid" value={lvl.qty} max={maxQty}>
-                  <span style={{ color: "rgba(0,0,0,0.85)" }}>
-                    {fmt(lvl.qty)}
-                  </span>
-                  <span style={{ color: "rgb(22,163,74)", fontWeight: 650 }}>
-                    {fmt(lvl.price, 1)}
-                  </span>
-                </BarCell>
-              </div>
-            );
-          })}
-        </div>
-
-        <div>
-          {Array.from({ length: depth }, (_, i) => {
-            const lvl = book.asks[i];
-            if (!lvl) {
-              return (
-                <div
-                  key={`ask-empty-${i}`}
-                  style={{
-                    height: 28,
-                    borderBottom: "1px solid rgba(0,0,0,0.04)",
-                  }}
-                />
-              );
-            }
-
-            return (
-              <div
-                key={`ask-${lvl.price}`}
-                style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
-              >
-                <BarCell side="ask" value={lvl.qty} max={maxQty}>
-                  <span style={{ color: "rgb(220,38,38)", fontWeight: 650 }}>
-                    {fmt(lvl.price, 1)}
-                  </span>
-                  <span style={{ color: "rgba(0,0,0,0.85)" }}>
-                    {fmt(lvl.qty)}
-                  </span>
-                </BarCell>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          padding: "10px 12px",
-          fontSize: 12,
-          color: "rgba(0,0,0,0.55)",
-          background: "rgba(0,0,0,0.02)",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <span>Depth: {depth}</span>
-        <span>Max size: {fmt(maxQty)}</span>
-      </div>
-    </div>
+    </>
   );
 }
