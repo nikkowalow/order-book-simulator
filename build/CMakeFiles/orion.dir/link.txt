@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -L/opt/homebrew/opt/openssl@3/lib CMakeFiles/orion.dir/src/main.cpp.o CMakeFiles/orion.dir/src/DataLoader.cpp.o CMakeFiles/orion.dir/src/PortfolioOptimizer.cpp.o -o orion

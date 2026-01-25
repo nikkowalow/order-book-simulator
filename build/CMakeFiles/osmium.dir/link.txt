@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -L/opt/homebrew/opt/openssl@3/lib CMakeFiles/osmium.dir/src/main.cpp.o CMakeFiles/osmium.dir/src/DataLoader.cpp.o CMakeFiles/osmium.dir/src/PortfolioOptimizer.cpp.o -o osmium
