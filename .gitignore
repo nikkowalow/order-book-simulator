@@ -41,3 +41,5 @@
 *.dwo
 
 core/build/
+
+ui/node_modules/
