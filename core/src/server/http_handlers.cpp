@@ -41,7 +41,7 @@ static bool extract_int_field(const std::string& body, const char* key, long lon
     std::string num;
     for (size_t i = colon + 1; i < body.size(); ++i) {
         unsigned char c = static_cast<unsigned char>(body[i]);
-        if (std::isdigit(c)) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
             num += static_cast<char>(c);
         } else if (!num.empty()) {
             break;
