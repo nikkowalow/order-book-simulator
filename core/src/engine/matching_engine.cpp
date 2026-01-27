@@ -114,3 +114,7 @@ void MatchingEngine::match_sell(Order &taker, std::vector<Trade> &trades)
         book_.cleanup_best_bid_level_if_empty();
     }
 }
+
+long long MatchingEngine::next_order_id() {
+    return next_id_.fetch_add(1, std::memory_order_relaxed);
+}

@@ -140,7 +140,7 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
             return;
         }
 
-        long long id = next_order_id++;
+        long long id = engine.next_order_id();
         Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty};
 
         std::vector<Trade> trades;
