@@ -2,10 +2,14 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 
-#include <types/types.hpp> // Order, Side, Trade
+#include <types/types.hpp> 
+#include "httplib.hpp"
 
-// Minimal request DTOs (server-layer)
+class OrderBook;
+class MatchingEngine;
+
 struct OrderRequest {
     Side side;
     int price;
@@ -16,11 +20,12 @@ struct CancelRequest {
     long long id;
 };
 
-// Parse JSON bodies (very small/naive parsing, same logic you had)
 bool parse_order_json(const std::string& body, OrderRequest& out);
 bool parse_cancel_json(const std::string& body, CancelRequest& out);
 
-// Build JSON responses
 std::string json_error(const std::string& msg);
 std::string json_ok(bool ok);
 std::string json_order_result(long long id, const std::vector<Trade>& trades);
+
+void register_http_routes(httplib::Server& http, OrderBook& book,
+                          MatchingEngine& engine, std::mutex& book_mtx);

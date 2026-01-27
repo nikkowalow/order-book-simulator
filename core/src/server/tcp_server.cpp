@@ -12,12 +12,8 @@
 #include <engine/matching_engine.hpp>
 #include <types/types.hpp>
 #include <sstream>
-#include <atomic>
 #include <sim/seed_book.hpp>
 #include <server/http_handlers.hpp>
-
-
-static std::atomic<long long> next_order_id{1000};
 
 static size_t count_lines(const std::string &s)
 {
@@ -123,99 +119,7 @@ int main(int argc, char **argv)
     std::mutex book_mtx;
 
     httplib::Server http;
-
-    // CORS preflight
-    http.Options(".*", [](const httplib::Request &, httplib::Response &res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
-        res.status = 204;
-    });
-
-    // POST /order - submit a limit order
-    http.Post("/order", [&](const httplib::Request &req, httplib::Response &res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-
-        OrderRequest r;
-        if (!parse_order_json(req.body, r)) {
-            res.status = 400;
-            res.set_content(json_error("Invalid order"), "application/json");
-            return;
-        }
-
-        long long id = next_order_id++;
-        Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty};
-
-        std::vector<Trade> trades;
-        {
-            std::lock_guard<std::mutex> lk(book_mtx);
-            trades = engine.process_limit_order(o);
-        }
-
-        res.set_content(json_order_result(id, trades), "application/json");
-    });
-
-    // POST /cancel - cancel an order by id
-    http.Post("/cancel", [&](const httplib::Request &req, httplib::Response &res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-
-        CancelRequest r;
-        if (!parse_cancel_json(req.body, r)) {
-            res.status = 400;
-            res.set_content(json_error("Invalid id"), "application/json");
-            return;
-        }
-
-        bool ok = false;
-        {
-            std::lock_guard<std::mutex> lk(book_mtx);
-            ok = book.cancel_order(r.id);
-        }
-
-        res.set_content(json_ok(ok), "application/json");
-    });
-
-    http.Get("/book", [&](const httplib::Request &, httplib::Response &res)
-             {
-    std::ostringstream oss;
-
-    std::lock_guard<std::mutex> lk(book_mtx);
-
-    oss << "{ \"bids\": [";
-    bool first = true;
-
-    // OPTIONAL: limit depth to keep payload small
-    int depth = 20;
-    int i = 0;
-
-    for (const auto& [price, q] : book.bids()) {
-        if (i++ >= depth) break;
-        long long qty = 0;
-        for (const auto& o : q) qty += o.qty;
-
-        if (!first) oss << ","; 
-        oss << "{ \"price\": " << price << ", \"qty\": " << qty << " }";
-        first = false;
-    }
-
-    oss << "], \"asks\": [";
-    first = true;
-    i = 0;
-
-    for (const auto& [price, q] : book.asks()) {
-        if (i++ >= depth) break;
-        long long qty = 0;
-        for (const auto& o : q) qty += o.qty;
-
-        if (!first) oss << ",";
-        oss << "{ \"price\": " << price << ", \"qty\": " << qty << " }";
-        first = false;
-    }
-
-    oss << "] }";
-
-    res.set_header("Access-Control-Allow-Origin", "*");
-    res.set_content(oss.str(), "application/json"); });
+    register_http_routes(http, book, engine, book_mtx);
 
     std::thread http_thread([&]()
                             { http.listen("0.0.0.0", 8080); });
@@ -263,7 +167,6 @@ int main(int argc, char **argv)
 
     while (true)
     {
-        // r.draw(render_book_frame(book));
         sockaddr_in client_addr{};
         socklen_t client_len = sizeof(client_addr);
 
