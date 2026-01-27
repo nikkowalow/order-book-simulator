@@ -12,7 +12,7 @@ public:
 
     long long next_order_id();
 
-    std::vector<Trade> process_limit_order(const Order &incoming);
+    std::vector<Trade> process_order(const Order &incoming);
 
 private:
     OrderBook &book_;

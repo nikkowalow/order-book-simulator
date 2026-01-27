@@ -12,6 +12,7 @@ class MatchingEngine;
 
 struct OrderRequest {
     Side side;
+    OrderType type;
     int price;
     long long qty;
 };

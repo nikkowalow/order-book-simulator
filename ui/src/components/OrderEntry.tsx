@@ -3,27 +3,41 @@ import React, { useState } from "react";
 export default function OrderEntry() {
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
+  const [orderType, setOrderType] = useState<"LIMIT" | "MARKET">("LIMIT");
   const [cancelId, setCancelId] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [orderLatencyMs, setOrderLatencyMs] = useState<number | null>(null);
   const [cancelLatencyMs, setCancelLatencyMs] = useState<number | null>(null);
 
   const submitOrder = async (side: "BUY" | "SELL") => {
-    const p = parseInt(price, 10);
+    console.log("Submitting order", { side, price, qty, orderType });
     const q = parseInt(qty, 10);
-    if (!p || !q || p <= 0 || q <= 0) {
-      setStatus("Invalid price or qty");
+    if (!q || q <= 0) {
+      setStatus("Invalid qty");
       return;
     }
 
+    if (orderType === "LIMIT") {
+      const p = parseInt(price, 10);
+      if (!p || p <= 0) {
+        setStatus("Invalid price");
+        return;
+      }
+    }
+
     setStatus(null);
+
+    const body: Record<string, unknown> = { side, qty: q, type: orderType };
+    if (orderType === "LIMIT") {
+      body.price = parseInt(price, 10);
+    }
 
     const t0 = performance.now();
     try {
       const res = await fetch("http://localhost:8080/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, price: p, qty: q }),
+        body: JSON.stringify(body),
       });
 
       const t1 = performance.now();
@@ -112,12 +126,47 @@ export default function OrderEntry() {
           alignItems: "center",
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          {(["LIMIT", "MARKET"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setOrderType(t)}
+              style={{
+                ...btnBase,
+                borderRadius: 0,
+                padding: "8px 12px",
+                fontSize: 12,
+                background:
+                  orderType === t ? "rgba(255,255,255,0.15)" : "transparent",
+                color:
+                  orderType === t
+                    ? "rgba(255,255,255,0.9)"
+                    : "rgba(255,255,255,0.4)",
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
         <input
           type="number"
           placeholder="Price"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          style={inputStyle}
+          disabled={orderType !== "LIMIT"}
+          style={{
+            ...inputStyle,
+            backgroundColor: orderType === "LIMIT" ? "#2a2a2a" : "#2a2a2a",
+            color: orderType === "LIMIT" ? "#fff" : "#888",
+            cursor: orderType === "LIMIT" ? "text" : "not-allowed",
+          }}
         />
         <input
           type="number"
@@ -176,9 +225,7 @@ export default function OrderEntry() {
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
             Order latency:{" "}
             <strong style={{ color: "rgba(255,255,255,0.75)" }}>
-              {orderLatencyMs == null
-                ? "—"
-                : `${orderLatencyMs.toFixed(1)} ms`}
+              {orderLatencyMs == null ? "—" : `${orderLatencyMs.toFixed(1)} ms`}
             </strong>
           </span>
 

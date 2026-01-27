@@ -226,11 +226,11 @@ int main(int argc, char **argv)
                 send_all(client_fd, "ACK " + std::to_string(o.id) + "\n");
 
                 // Match and execute
-                auto trades = engine.process_limit_order(o);
+                auto trades = engine.process_order(o);
 
                 {
                     std::lock_guard<std::mutex> lk(book_mtx);
-                    trades = engine.process_limit_order(o);
+                    trades = engine.process_order(o);
                 }
 
                 for (const auto &t : trades)
@@ -243,14 +243,14 @@ int main(int argc, char **argv)
                 }
                 {
                     std::lock_guard<std::mutex> lk(book_mtx);
-                    book.print_book(std::cout);
+                    // book.print_book(std::cout);
                 }
                 // Print book on server for debugging
                 // book.print_book(std::cout);
-                auto frame = render_book_frame(book);
-                std::cout << frame << std::flush;
-                move_cursor_up(last_book_lines);
-                last_book_lines = count_lines(frame);
+                // auto frame = render_book_frame(book);
+                // std::cout << frame << std::flush;
+                // move_cursor_up(last_book_lines);
+                // last_book_lines = count_lines(frame);
 
                 // Send best quote snapshot back
                 send_best_quote(client_fd, book);

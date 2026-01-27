@@ -63,16 +63,28 @@ bool parse_order_json(const std::string& body, OrderRequest& out) {
     std::string side_str;
     long long price_ll = 0;
     long long qty_ll = 0;
+    std::string type_str = "LIMIT";
 
     if (!extract_string_field(body, "side", side_str)) return false;
-    if (!extract_int_field(body, "price", price_ll)) return false;
     if (!extract_int_field(body, "qty", qty_ll)) return false;
+    extract_string_field(body, "type", type_str); // optional, defaults to LIMIT
 
     if (side_str != "BUY" && side_str != "SELL") return false;
-    if (price_ll <= 0 || qty_ll <= 0) return false;
+    if (qty_ll <= 0) return false;
+
+    if (type_str == "MARKET") {
+        out.type = OrderType::Market;
+        out.price = 0; 
+    } else if (type_str == "LIMIT") {
+        out.type = OrderType::Limit;
+        if (!extract_int_field(body, "price", price_ll)) return false;
+        if (price_ll <= 0) return false;
+        out.price = static_cast<int>(price_ll);
+    } else {
+        return false;
+    }
 
     out.side = (side_str == "BUY") ? Side::Buy : Side::Sell;
-    out.price = static_cast<int>(price_ll);
     out.qty = qty_ll;
     return true;
 }
@@ -131,6 +143,7 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
 
     // POST /order
     http.Post("/order", [&](const httplib::Request &req, httplib::Response &res) {
+        std::cout << "Received /order request: " << req.body << "\n";
         res.set_header("Access-Control-Allow-Origin", "*");
 
         OrderRequest r;
@@ -141,12 +154,12 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         }
 
         long long id = engine.next_order_id();
-        Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty};
+        Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty, .type = r.type};
 
         std::vector<Trade> trades;
         {
             std::lock_guard<std::mutex> lk(book_mtx);
-            trades = engine.process_limit_order(o);
+            trades = engine.process_order(o);
         }
 
         res.set_content(json_order_result(id, trades), "application/json");
