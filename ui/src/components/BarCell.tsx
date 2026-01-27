@@ -1,3 +1,5 @@
+import { Side } from "../types/types";
+
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
@@ -46,7 +48,7 @@ export function BarCell({
           position: "absolute",
           top: 0,
           bottom: 0,
-          borderRadius: 6,
+          //   borderRadius: 6,
           transition: "width 180ms ease",
           ...barStyle,
         }}
