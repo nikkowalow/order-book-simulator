@@ -6,26 +6,36 @@ export function useTrades(limit = 100) {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchTrades = async () => {
       try {
         const res = await fetch(`http://localhost:8080/trades?limit=${limit}`, {
           cache: "no-store",
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = (await res.json()) as Trade[];
-        setTrades(data);
-        setErr(null);
+        if (!cancelled) {
+          setTrades(data);
+          setErr(null);
+        }
       } catch (e: any) {
-        setErr(e.message ?? "Failed to fetch trades");
-        setTrades(null);
+        if (!cancelled) {
+          setErr(e.message ?? "Failed to fetch trades");
+        }
       }
     };
 
     fetchTrades();
+
+    const id = setInterval(fetchTrades, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [limit]);
 
   return { trades, err };

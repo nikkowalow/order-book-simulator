@@ -1,40 +1,53 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Book } from "../types/types";
 
-export function useBook(intervalMs = 5) {
+const WS_URL = "ws://localhost:9001";
+
+export function useBook() {
   const [book, setBook] = useState<Book | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
 
-    const fetchBook = async () => {
-      try {
-        setErr(null);
-        const res = await fetch("http://localhost:8080/book", {
-          cache: "no-store",
-        });
+    // Initial fetch
+    fetch("http://localhost:8080/book", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: Book) => setBook(data))
+      .catch((e) => setErr(e?.message ?? "Failed to fetch /book"));
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
+    function connect() {
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
 
-        const data = (await res.json()) as Book;
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data) as Book;
+          console.log("Received book update via WS", data);
+          if (data.bids && data.asks) {
+            setBook(data);
+            setErr(null);
+          }
+        } catch {}
+      };
 
-        if (!cancelled) setBook(data);
-      } catch (e: any) {
-        if (!cancelled) setErr(e?.message ?? "Failed to fetch /book");
-      }
-    };
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 2000);
+      };
 
-    fetchBook();
-    const id = setInterval(fetchBook, intervalMs);
+      ws.onerror = () => {
+        ws.close();
+      };
+    }
+
+    connect();
 
     return () => {
-      cancelled = true;
-      clearInterval(id);
+      clearTimeout(reconnectTimer);
+      wsRef.current?.close();
     };
-  }, [intervalMs]);
+  }, []);
 
   return { book, err };
 }
