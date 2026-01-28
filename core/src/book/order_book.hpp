@@ -30,7 +30,13 @@ public:
     const auto &bids() const { return bids_; }
     const auto &asks() const { return asks_; }
 
+    using ChangeCallback = std::function<void()>;
+    void set_on_change(ChangeCallback cb) { on_change_ = std::move(cb); }
+    void notify_change() { if (on_change_) on_change_(); }
+
 private:
+    ChangeCallback on_change_;
+
     using OrderList = std::list<Order>;
 
     struct Locator

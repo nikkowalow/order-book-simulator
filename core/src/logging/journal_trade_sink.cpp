@@ -9,7 +9,6 @@ JournalTradeSink::JournalTradeSink(const std::string& path)
 void JournalTradeSink::on_trade(const Trade& t)
 {
 
-    std::cout << "JournalTradeSink: Logging trade " << t.trade_id << "\n";
     std::lock_guard<std::mutex> lk(mtx_);
 
     out_

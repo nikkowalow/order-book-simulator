@@ -178,7 +178,7 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
 
     // POST /order
     http.Post("/order", [&](const httplib::Request &req, httplib::Response &res) {
-        std::cout << "Received /order request: " << req.body << "\n";
+
         res.set_header("Access-Control-Allow-Origin", "*");
 
         OrderRequest r;

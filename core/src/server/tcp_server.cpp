@@ -15,6 +15,9 @@
 #include <sim/seed_book.hpp>
 #include <server/http_handlers.hpp>
 #include <logging/journal_trade_sink.hpp>
+#include <engine/multi_trade_sink.hpp>
+#include <server/ws_trade_sink.hpp>
+#include <market_maker/market_maker.hpp>
 
 static size_t count_lines(const std::string &s)
 {
@@ -116,10 +119,49 @@ int main(int argc, char **argv)
 
     OrderBook book;
     seed_book(book);
-    JournalTradeSink sink("trades.jsonl");
-    MatchingEngine engine(book, &sink);
+
+    JournalTradeSink journal_sink("trades.jsonl");
+    WsTradeSink ws_sink(9001);
+    ws_sink.start();
+
+    book.set_on_change([&ws_sink, &book]() {
+        std::ostringstream oss;
+        oss << "{\"bids\":[";
+        bool first = true;
+        int depth = 20;
+        int i = 0;
+        for (const auto& [price, q] : book.bids()) {
+            if (i++ >= depth) break;
+            long long qty = 0;
+            for (const auto& o : q) qty += o.qty;
+            if (!first) oss << ",";
+            oss << "{\"price\":" << price << ",\"qty\":" << qty << "}";
+            first = false;
+        }
+        oss << "],\"asks\":[";
+        first = true;
+        i = 0;
+        for (const auto& [price, q] : book.asks()) {
+            if (i++ >= depth) break;
+            long long qty = 0;
+            for (const auto& o : q) qty += o.qty;
+            if (!first) oss << ",";
+            oss << "{\"price\":" << price << ",\"qty\":" << qty << "}";
+            first = false;
+        }
+        oss << "]}";
+        ws_sink.broadcast(oss.str());
+    });
+
+    MultiTradeSink multi_sink;
+    multi_sink.add_sink(&journal_sink);
+    multi_sink.add_sink(&ws_sink);
+
+    MatchingEngine engine(book, &multi_sink);
     std::mutex book_mtx;
 
+    MarketMaker mm(book, engine, book_mtx);
+    // mm.start();
 
     httplib::Server http;
     register_http_routes(http, book, engine, book_mtx);
@@ -221,60 +263,6 @@ int main(int argc, char **argv)
             {
                 std::cout << "Send failed\n";
                 break;
-            }
-            Order o;
-            if (parse_order_line(msg, o))
-            {
-                // ACK
-                send_all(client_fd, "ACK " + std::to_string(o.id) + "\n");
-
-                // Match and execute
-                auto trades = engine.process_order(o);
-
-                {
-                    std::lock_guard<std::mutex> lk(book_mtx);
-                    trades = engine.process_order(o);
-                }
-
-                for (const auto &t : trades)
-                {
-                    std::string tr = "TRADE price=" + std::to_string(t.price) +
-                                     " qty=" + std::to_string(t.qty) +
-                                     " maker=" + std::to_string(t.maker_id) +
-                                     " taker=" + std::to_string(t.taker_id) + "\n";
-                    send_all(client_fd, tr);
-                }
-                {
-                    std::lock_guard<std::mutex> lk(book_mtx);
-                    // book.print_book(std::cout);
-                }
-                // Print book on server for debugging
-                // book.print_book(std::cout);
-                // auto frame = render_book_frame(book);
-                // std::cout << frame << std::flush;
-                // move_cursor_up(last_book_lines);
-                // last_book_lines = count_lines(frame);
-
-                // Send best quote snapshot back
-                send_best_quote(client_fd, book);
-
-                continue;
-            }
-            long long cancel_id;
-            if (parse_cancel_line(msg, cancel_id))
-            {
-                bool ok;
-                {
-                    std::lock_guard<std::mutex> lk(book_mtx);
-                    ok = book.cancel_order(cancel_id);
-                }
-                send_all(client_fd, ok ? "ACK CANCEL OK\n" : "ACK CANCEL NOT_FOUND\n");
-
-                {
-                    std::lock_guard<std::mutex> lk(book_mtx);
-                    book.print_book(std::cout);
-                }
-                continue;
             }
         }
 

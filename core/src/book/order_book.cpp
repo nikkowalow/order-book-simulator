@@ -89,6 +89,8 @@ void OrderBook::add_resting_order(const Order &o)
             .price = o.price,
             .it = it};
     }
+
+    notify_change();
 }
 
 bool OrderBook::cancel_order(long long order_id)
@@ -125,6 +127,7 @@ bool OrderBook::cancel_order(long long order_id)
     }
 
     index_.erase(it);
+    notify_change();
     return true;
 }
 

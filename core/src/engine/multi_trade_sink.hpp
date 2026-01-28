@@ -13,7 +13,6 @@ public:
 
     void on_trade(const Trade& t) override {
         for (auto* s : sinks_) {
-            std::cout << "MultiTradeSink: Forwarding trade " << t.trade_id << " to sink\n";
             s->on_trade(t);
         }
     }
