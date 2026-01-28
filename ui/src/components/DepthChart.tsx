@@ -69,8 +69,7 @@ export default function DepthChart() {
 
     const toX = (price: number) =>
       pad.left + ((price - minPrice) / priceRange) * plotW;
-    const toY = (qty: number) =>
-      pad.top + plotH - (qty / qtyRange) * plotH;
+    const toY = (qty: number) => pad.top + plotH - (qty / qtyRange) * plotH;
 
     // Grid lines
     ctx.strokeStyle = "rgba(255,255,255,0.06)";
@@ -176,18 +175,41 @@ export default function DepthChart() {
     <div
       className="panel"
       style={{
-        maxWidth: 900,
-        margin: "16px auto",
-        padding: 16,
+        width: "100%",
+        height: "100%",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden", // IMPORTANT
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 8, letterSpacing: 0.3 }}>
+      <div
+        style={{
+          padding: "16px 16px 8px 16px",
+          fontWeight: 700,
+          letterSpacing: 0.3,
+          flexShrink: 0,
+        }}
+      >
         Depth
       </div>
-      <canvas
-        ref={canvasRef}
-        style={{ width: "100%", height: 220, display: "block" }}
-      />
+
+      <div
+        style={{
+          flex: 1,
+          padding: "0 16px 16px 16px",
+          boxSizing: "border-box",
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "block",
+          }}
+        />
+      </div>
     </div>
   );
 }

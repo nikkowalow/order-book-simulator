@@ -24,17 +24,16 @@ export default function TradeHistory() {
     );
   }
 
-  if (!trades)
-    return <div style={{ maxWidth: 900, margin: "24px auto" }}>Loading…</div>;
+  if (!trades) return <div style={{ maxWidth: 900 }}>Loading…</div>;
 
   return (
     <div
       className="panel"
       style={{
         width: "100%",
-        maxWidth: 900,
-        margin: "0 auto",
-        overflow: "hidden",
+        height: "100%",
+        overflow: "auto",
+        boxSizing: "border-box",
       }}
     >
       {/* Header */}

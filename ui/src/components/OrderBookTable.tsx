@@ -11,6 +11,12 @@ function fmt(n: number, decimals = 0) {
 
 export default function OrderBookTable() {
   const { book, err } = useBook();
+  const ROW_HEIGHT = 28;
+  const HEADER_HEIGHT = 92; // header + column labels + footer (approx)
+
+  const visibleDepth = book
+    ? Math.floor((window.innerHeight - HEADER_HEIGHT) / ROW_HEIGHT)
+    : 0;
 
   const maxQty = useMemo(() => {
     if (!book) return 1;
@@ -29,16 +35,19 @@ export default function OrderBookTable() {
   if (!book)
     return <div style={{ maxWidth: 900, margin: "24px auto" }}>Loading…</div>;
 
-  const depth = Math.max(book.bids.length, book.asks.length);
+  const depth = Math.min(
+    visibleDepth,
+    Math.max(book.bids.length, book.asks.length),
+  );
 
   return (
     <div
       className="panel"
       style={{
         width: "100%",
-        maxWidth: 900,
-        margin: "0 auto",
-        overflow: "hidden",
+        height: "100%",
+        overflow: "auto",
+        boxSizing: "border-box",
       }}
     >
       {/* Header */}
@@ -106,7 +115,14 @@ export default function OrderBookTable() {
       </div>
 
       {/* Rows */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          overflow: "hidden",
+        }}
+      >
         <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}>
           {Array.from({ length: depth }, (_, i) => {
             const lvl = book.bids[i];

@@ -113,8 +113,10 @@ export default function OrderEntry() {
     <div
       className="panel"
       style={{
-        maxWidth: 900,
-        margin: "24px auto 16px",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
         padding: 16,
       }}
     >

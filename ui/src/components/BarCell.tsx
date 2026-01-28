@@ -23,13 +23,13 @@ export function BarCell({
           left: 0,
           width: `${pct}%`,
           background:
-            "linear-gradient(90deg, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0.40) 100%)",
+            "linear-gradient(90deg, rgba(0, 255, 94, 0.18) 0%, rgba(34,197,94,0.40) 100%)",
         }
       : {
           right: 0,
           width: `${pct}%`,
           background:
-            "linear-gradient(270deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.40) 100%)",
+            "linear-gradient(270deg, rgba(255, 0, 0, 0.18) 0%, rgba(255, 0, 0, 0.4) 100%)",
         };
 
   return (
