@@ -2,6 +2,7 @@ import React from "react";
 import OrderBookTable from "./components/OrderBookTable";
 import OrderEntry from "./components/OrderEntry";
 import DepthChart from "./components/DepthChart";
+import TradeHistory from "./components/TradeHistory";
 
 export default function App() {
   return (
@@ -9,6 +10,7 @@ export default function App() {
       <OrderEntry />
       <OrderBookTable />
       <DepthChart />
+      <TradeHistory />
     </>
   );
 }

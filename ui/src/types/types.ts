@@ -9,3 +9,13 @@ export type Book = {
   bids: Level[];
   asks: Level[];
 };
+
+export interface Trade {
+  seq: number;
+  trade_id: number;
+  price: number;
+  qty: number;
+  maker: number;
+  taker: number;
+  ts: number;
+}
