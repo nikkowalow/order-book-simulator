@@ -12,7 +12,6 @@ MatchingEngine::MatchingEngine(OrderBook& book, TradeSink* sink)
 
 static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
 {
-    std::cout << "MatchingEngine: Emitting " << trades.size() << " trades\n";
     if (!sink) return;
 
     for (auto& t : trades) {
@@ -28,6 +27,9 @@ static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
 
 std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
 {
+
+    ScopedTimer timer("process_order");
+
     if (incoming.qty <= 0)
         return {};
 
@@ -43,12 +45,18 @@ std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
         match_sell(taker, trades);
     }
 
+    if (!trades.empty())
+    {
+        book_.notify_change();
+    }
+
     if (taker.type == OrderType::Limit && taker.qty > 0)
     {
         book_.add_resting_order(taker);
     }
 
     emit_trades(trades, &sink_);
+
 
     return trades;
 }
@@ -81,6 +89,8 @@ void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
                 .price = ask_price,
                 .qty = fill_qty});
             
+            // std::cout << "Trade executed: maker_id=" << maker.id << " taker_id=" << taker.id 
+            //           << " price=" << ask_price << " qty=" << fill_qty << "\n";
 
             taker.qty -= fill_qty;
             maker.qty -= fill_qty;
