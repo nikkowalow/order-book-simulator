@@ -35,3 +35,4 @@ The project is intentionally split into clearly defined layers:
 The system follows a simple but realistic pipeline:
 
 ![Architecture](docs/images/LOB ME.drawio.png)
+<img width="761" height="921" alt="LOB ME drawio" src="https://github.com/user-attachments/assets/0f1235ad-80f0-4ffb-82e5-2eeca8bf311a" />
