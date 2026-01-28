@@ -31,7 +31,6 @@ std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
 
 void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
 {
-    std::cout <<"order type: " << (taker.type == OrderType::Limit ? "LIMIT" : "MARKET") << "\n";
     while (taker.qty > 0)
     {
         auto best_ask = book_.best_ask();
@@ -58,7 +57,6 @@ void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
                 .price = ask_price,
                 .qty = fill_qty});
             
-            std::cout << "MATCH_BUY: Taker " << taker.id << " buys " << fill_qty << " from Maker " << maker.id << " at price " << ask_price << "\n";
 
             taker.qty -= fill_qty;
             maker.qty -= fill_qty;
@@ -71,7 +69,6 @@ void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
 
         book_.cleanup_best_ask_level_if_empty();
     }
-    std::cout << "MATCH_BUY: completed matching loop\n";
 }
 
 void MatchingEngine::match_sell(Order &taker, std::vector<Trade> &trades)
