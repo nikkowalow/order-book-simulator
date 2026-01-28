@@ -6,8 +6,43 @@
 
 #include <book/order_book.hpp>
 #include <engine/matching_engine.hpp>
+#include <fstream>
+#include <deque>
 
 // -------- helpers --------
+static std::string read_last_trades_jsonl(
+    const std::string& path,
+    size_t limit
+) {
+    std::ifstream file(path);
+    std::string line;
+
+    std::deque<std::string> buffer;
+
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+
+        buffer.push_back(line);
+        if (buffer.size() > limit) {
+            buffer.pop_front();
+        }
+    }
+
+    // build JSON array (newest first)
+    std::ostringstream oss;
+    oss << "[";
+
+    bool first = true;
+    for (auto it = buffer.rbegin(); it != buffer.rend(); ++it) {
+        if (!first) oss << ",";
+        oss << *it;   // already JSON
+        first = false;
+    }
+
+    oss << "]";
+    return oss.str();
+}
+
 
 static bool extract_string_field(const std::string& body, const char* key, std::string& out) {
     std::string k = "\"";
@@ -225,4 +260,19 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(oss.str(), "application/json");
     });
+    
+    http.Get("/trades", [&](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+
+        size_t limit = 100;
+        if (req.has_param("limit")) {
+            limit = std::stoul(req.get_param_value("limit"));
+            if (limit == 0) limit = 100;
+            if (limit > 1000) limit = 1000; 
+        }
+
+        std::string body = read_last_trades_jsonl("trades.jsonl", limit);
+        res.set_content(body, "application/json");
+    });
 }
+
