@@ -1,8 +1,29 @@
-#include "matching_engine.hpp"
+#include "engine/matching_engine.hpp"
 #include <iostream>
 
-MatchingEngine::MatchingEngine(OrderBook &book)
-    : book_(book) {}
+static std::atomic<long long> global_seq{1};
+static std::atomic<long long> global_trade_id{1};
+
+MatchingEngine::MatchingEngine(OrderBook& book, TradeSink* sink)
+    : book_(book), sink_(*sink)
+{
+}
+
+static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
+{
+    std::cout << "MatchingEngine: Emitting " << trades.size() << " trades\n";
+    if (!sink) return;
+
+    for (auto& t : trades) {
+        t.seq = global_seq.fetch_add(1, std::memory_order_relaxed);
+        t.trade_id = global_trade_id.fetch_add(1, std::memory_order_relaxed);
+        t.timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()
+        );
+
+        sink->on_trade(t);
+    }
+}
 
 std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
 {
@@ -25,6 +46,8 @@ std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
     {
         book_.add_resting_order(taker);
     }
+
+    emit_trades(trades, &sink_);
 
     return trades;
 }

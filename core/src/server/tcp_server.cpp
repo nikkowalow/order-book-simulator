@@ -14,6 +14,7 @@
 #include <sstream>
 #include <sim/seed_book.hpp>
 #include <server/http_handlers.hpp>
+#include <logging/journal_trade_sink.hpp>
 
 static size_t count_lines(const std::string &s)
 {
@@ -115,8 +116,10 @@ int main(int argc, char **argv)
 
     OrderBook book;
     seed_book(book);
-    MatchingEngine engine(book);
+    JournalTradeSink sink("trades.jsonl");
+    MatchingEngine engine(book, &sink);
     std::mutex book_mtx;
+
 
     httplib::Server http;
     register_http_routes(http, book, engine, book_mtx);

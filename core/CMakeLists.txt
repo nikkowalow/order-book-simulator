@@ -35,6 +35,7 @@ target_link_libraries(osmium PRIVATE core)
 add_executable(tcp_server
     src/server/tcp_server.cpp
     src/server/http_handlers.cpp
+    src/logging/journal_trade_sink.cpp
 )
 
 target_include_directories(tcp_server PRIVATE

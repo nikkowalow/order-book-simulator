@@ -22,8 +22,11 @@ struct Order
 
 struct Trade
 {
+    long long trade_id;
     long long maker_id;
     long long taker_id;
     int price;
     long long qty;
+    long long seq;
+    std::chrono::nanoseconds timestamp;
 };
