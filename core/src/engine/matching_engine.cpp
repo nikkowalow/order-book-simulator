@@ -1,5 +1,6 @@
 #include "engine/matching_engine.hpp"
 #include <iostream>
+#include "../../utils/scoped_timer.hpp"
 
 static std::atomic<long long> global_seq{1};
 static std::atomic<long long> global_trade_id{1};

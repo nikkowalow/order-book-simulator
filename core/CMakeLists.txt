@@ -12,6 +12,7 @@ add_library(core
     src/book/order_book.cpp
     src/engine/matching_engine.cpp
     src/sim/seed_book.cpp
+    utils/scoped_timer.cpp
 )
 
 target_include_directories(core
