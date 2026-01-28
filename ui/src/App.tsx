@@ -1,16 +1,70 @@
-import React from "react";
 import OrderBookTable from "./components/OrderBookTable";
-import OrderEntry from "./components/OrderEntry";
 import DepthChart from "./components/DepthChart";
 import TradeHistory from "./components/TradeHistory";
+import OrderEntry from "./components/OrderEntry";
 
 export default function App() {
   return (
-    <>
-      <OrderEntry />
-      <OrderBookTable />
-      <DepthChart />
-      <TradeHistory />
-    </>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 3fr 1fr",
+        gridTemplateRows: "1fr 1fr",
+        height: "100vh",
+        gap: 8,
+        padding: 8,
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Left: Analytics (full height) */}
+      <div
+        style={{ gridColumn: "1", gridRow: "1 / 3", overflow: "auto" }}
+        className="panel"
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            color: "rgba(255,255,255,0.3)",
+            fontSize: 18,
+            fontWeight: 600,
+          }}
+        >
+          Analytics (TODO)
+        </div>
+      </div>
+
+      {/* Center-top: Order Book Table */}
+      <div style={{ gridColumn: "2", gridRow: "1", overflow: "auto" }}>
+        <OrderBookTable />
+      </div>
+
+      {/* Center-bottom: Depth Chart */}
+      <div style={{ gridColumn: "2", gridRow: "2", overflow: "auto" }}>
+        <DepthChart />
+      </div>
+
+      {/* Right column: 4/5 TradeHistory, 1/5 OrderEntry */}
+      <div
+        style={{
+          gridColumn: "3",
+          gridRow: "1 / 3",
+          display: "grid",
+          gridTemplateRows: "4fr 1fr",
+          gap: 8,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ overflow: "auto" }}>
+          <TradeHistory />
+        </div>
+
+        <div style={{ overflow: "auto" }}>
+          <OrderEntry />
+        </div>
+      </div>
+    </div>
   );
 }
