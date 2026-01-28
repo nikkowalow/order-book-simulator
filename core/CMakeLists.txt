@@ -1,48 +1,66 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(OrderBookSimulator)
+project(OrderBookSimulator LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# If you want to include headers from src/ (like "book/order_book.hpp")
-include_directories(src)
-# Include tabulate headers
-include_directories(${CMAKE_SOURCE_DIR}/external/tabulate/include)
-
-# Build core logic as a library (order book + matching engine)
+# ------------------------
+# Core library
+# ------------------------
 add_library(core
     src/book/order_book.cpp
     src/engine/matching_engine.cpp
     src/sim/seed_book.cpp
 )
 
-# Demo binary (your old single-process main)
+target_include_directories(core
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/external/tabulate/include
+)
+
+# ------------------------
+# Main demo binary
+# ------------------------
 add_executable(osmium
     src/main.cpp
 )
+
 target_link_libraries(osmium PRIVATE core)
 
-# TCP server binary
+# ------------------------
+# TCP server
+# ------------------------
 add_executable(tcp_server
     src/server/tcp_server.cpp
+    src/server/http_handlers.cpp
 )
+
+target_include_directories(tcp_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/httplib
+)
+
 target_link_libraries(tcp_server PRIVATE core)
 
-# TCP client binary
+# ------------------------
+# TCP client
+# ------------------------
 add_executable(tcp_client
     src/server/tcp_client.cpp
 )
-add_subdirectory(external/tabulate)
-
-target_include_directories(core PRIVATE ${CMAKE_SOURCE_DIR}/external/tabulate/include)
 
 target_link_libraries(tcp_client PRIVATE core)
 
-target_include_directories(tcp_server PRIVATE
-  ${CMAKE_SOURCE_DIR}/external/httplib
+# ------------------------
+# Tests
+# ------------------------
+find_package(Catch2 3 REQUIRED)
+
+add_executable(tests
+    tests/test_main.cpp
+    # tests/test_matching_engine.cpp
+    # tests/test_order_book.cpp
 )
 
-target_sources(tcp_server PRIVATE
-  src/server/http_handlers.cpp
-)
+target_link_libraries(tests PRIVATE core Catch2::Catch2WithMain)
