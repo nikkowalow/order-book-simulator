@@ -1,5 +1,6 @@
 # Limit Order Book & Matching Engine Simulator
 
+Limit Order Book & Matching Engine Simulator
 A C++ implementation of a **price–time priority** limit order book and matching engine, exposing an HTTP API and a real-time UI for visualizing order flow, market depth, and executed trades.
 
 This project is designed to model the core mechanics of modern electronic exchanges, with an emphasis on determinism, correctness, and clean system boundaries.
