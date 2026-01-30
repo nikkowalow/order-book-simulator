@@ -41,6 +41,7 @@ add_executable(tcp_server
     src/server/book_serializer.cpp
     src/server/ws_trade_sink.cpp
     src/logging/journal_trade_sink.cpp
+    src/logging/journal_order_sink.cpp
     src/market_maker/market_maker.cpp
 )
 

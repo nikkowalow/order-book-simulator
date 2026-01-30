@@ -15,6 +15,7 @@
 #include <server/http_handlers.hpp>
 #include <server/book_serializer.hpp>
 #include <logging/journal_trade_sink.hpp>
+#include <logging/journal_order_sink.hpp>
 #include <engine/multi_trade_sink.hpp>
 #include <server/ws_trade_sink.hpp>
 #include <market_maker/market_maker.hpp>
@@ -40,7 +41,8 @@ int main(int argc, char **argv)
     OrderBook book;
     seed_book(book);
 
-    JournalTradeSink journal_sink("trades.jsonl");
+    JournalTradeSink journal_trade_sink("trades.jsonl");
+    JournalOrderSink journal_order_sink("orders.jsonl");
     WsTradeSink ws_sink(9001);
     ws_sink.start();
 
@@ -49,10 +51,10 @@ int main(int argc, char **argv)
     });
 
     MultiTradeSink multi_sink;
-    multi_sink.add_sink(&journal_sink);
+    multi_sink.add_sink(&journal_trade_sink);
     multi_sink.add_sink(&ws_sink);
 
-    MatchingEngine engine(book, &multi_sink);
+    MatchingEngine engine(book, &multi_sink, &journal_order_sink);
     std::mutex book_mtx;
 
     MarketMaker mm(book, engine, book_mtx);
