@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { BarCell } from "./BarCell";
+import { VolumeBar } from "./VolumeBar";
 import { useBook } from "../hooks/useBook";
 
 function fmt(n: number, decimals = 0) {
@@ -22,6 +23,13 @@ export default function OrderBookTable() {
     if (!book) return 1;
     const all = [...book.bids, ...book.asks].map((l) => l.qty);
     return all.length ? Math.max(...all) : 1;
+  }, [book]);
+
+  const { bidVolume, askVolume } = useMemo(() => {
+    if (!book) return { bidVolume: 0, askVolume: 0 };
+    const bidVolume = book.bids.reduce((sum, lvl) => sum + lvl.qty, 0);
+    const askVolume = book.asks.reduce((sum, lvl) => sum + lvl.qty, 0);
+    return { bidVolume, askVolume };
   }, [book]);
 
   if (err) {
@@ -48,6 +56,8 @@ export default function OrderBookTable() {
         height: "100%",
         overflow: "auto",
         boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Header */}
@@ -188,6 +198,11 @@ export default function OrderBookTable() {
             );
           })}
         </div>
+      </div>
+
+      {/* Volume Bar */}
+      <div style={{ marginTop: "auto" }}>
+        <VolumeBar bidVolume={bidVolume} askVolume={askVolume} />
       </div>
 
       {/* Footer */}

@@ -180,7 +180,7 @@ export default function DepthChart() {
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden", // IMPORTANT
+        overflow: "hidden",
       }}
     >
       <div
@@ -197,6 +197,7 @@ export default function DepthChart() {
       <div
         style={{
           flex: 1,
+          minHeight: 0,
           padding: "0 16px 16px 16px",
           boxSizing: "border-box",
         }}
