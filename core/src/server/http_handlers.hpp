@@ -26,7 +26,7 @@ bool parse_cancel_json(const std::string& body, CancelRequest& out);
 
 std::string json_error(const std::string& msg);
 std::string json_ok(bool ok);
-std::string json_order_result(long long id, const std::vector<Trade>& trades);
+std::string json_order_result(const OrderResult& result);
 
 void register_http_routes(httplib::Server& http, OrderBook& book,
                           MatchingEngine& engine, std::mutex& book_mtx);

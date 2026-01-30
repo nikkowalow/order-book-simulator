@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <vector>
 
 enum class Side
 {
@@ -31,4 +32,21 @@ struct Trade
     long long qty;
     long long seq;
     std::chrono::nanoseconds timestamp;
+};
+
+enum class OrderStatus {
+    New,
+    PartiallyFilled,
+    Filled,
+    Canceled,
+    Rejected
+};
+
+struct OrderResult {
+    long long id;
+    OrderStatus status;
+    long long original_qty;
+    long long filled_qty;
+    long long remaining_qty;
+    std::vector<Trade> trades;
 };

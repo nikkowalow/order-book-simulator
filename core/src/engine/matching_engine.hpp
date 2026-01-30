@@ -13,7 +13,7 @@ public:
 
     long long next_order_id();
 
-    std::vector<Trade> process_order(const Order &incoming);
+    OrderResult process_order(const Order &incoming);
 
 private:
     OrderBook &book_;

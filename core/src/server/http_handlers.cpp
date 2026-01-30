@@ -147,11 +147,27 @@ std::string json_ok(bool ok) {
     return ok ? "{\"ok\":true}" : "{\"ok\":false}";
 }
 
-std::string json_order_result(long long id, const std::vector<Trade>& trades) {
+static const char* status_to_string(OrderStatus status) {
+    switch (status) {
+        case OrderStatus::New: return "NEW";
+        case OrderStatus::PartiallyFilled: return "PARTIALLY_FILLED";
+        case OrderStatus::Filled: return "FILLED";
+        case OrderStatus::Canceled: return "CANCELED";
+        case OrderStatus::Rejected: return "REJECTED";
+    }
+    return "UNKNOWN";
+}
+
+std::string json_order_result(const OrderResult& result) {
     std::ostringstream oss;
-    oss << "{\"id\":" << id << ",\"trades\":[";
+    oss << "{\"id\":" << result.id
+        << ",\"status\":\"" << status_to_string(result.status) << "\""
+        << ",\"originalQty\":" << result.original_qty
+        << ",\"filledQty\":" << result.filled_qty
+        << ",\"remainingQty\":" << result.remaining_qty
+        << ",\"trades\":[";
     bool first = true;
-    for (const auto& t : trades) {
+    for (const auto& t : result.trades) {
         if (!first) oss << ",";
         oss << "{\"price\":" << t.price << ",\"qty\":" << t.qty
             << ",\"maker\":" << t.maker_id << ",\"taker\":" << t.taker_id << "}";
@@ -191,13 +207,13 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         long long id = engine.next_order_id();
         Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty, .type = r.type};
 
-        std::vector<Trade> trades;
+        OrderResult result;
         {
             std::lock_guard<std::mutex> lk(book_mtx);
-            trades = engine.process_order(o);
+            result = engine.process_order(o);
         }
 
-        res.set_content(json_order_result(id, trades), "application/json");
+        res.set_content(json_order_result(result), "application/json");
     });
 
     // POST /cancel

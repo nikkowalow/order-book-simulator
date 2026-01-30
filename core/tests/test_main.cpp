@@ -71,9 +71,9 @@ TEST_CASE("Limit buy no match rests on book") {
     book.add_resting_order(limit_sell(1, 105, 10));
 
     // Buy at 100 doesn't cross the ask at 105
-    auto trades = engine.process_order(limit_buy(2, 100, 5));
+    auto result = engine.process_order(limit_buy(2, 100, 5));
 
-    REQUIRE(trades.empty());
+    REQUIRE(result.trades.empty());
     REQUIRE(book.best_bid().value() == 100);
     REQUIRE(book.best_ask().value() == 105);
 }
@@ -85,9 +85,9 @@ TEST_CASE("Limit sell no match rests on book") {
     book.add_resting_order(limit_buy(1, 95, 10));
 
     // Sell at 100 doesn't cross the bid at 95
-    auto trades = engine.process_order(limit_sell(2, 100, 5));
+    auto result = engine.process_order(limit_sell(2, 100, 5));
 
-    REQUIRE(trades.empty());
+    REQUIRE(result.trades.empty());
     REQUIRE(book.best_bid().value() == 95);
     REQUIRE(book.best_ask().value() == 100);
 }
@@ -98,13 +98,13 @@ TEST_CASE("Limit buy exact fill") {
 
     book.add_resting_order(limit_sell(1, 100, 10));
 
-    auto trades = engine.process_order(limit_buy(2, 100, 10));
+    auto result = engine.process_order(limit_buy(2, 100, 10));
 
-    REQUIRE(trades.size() == 1);
-    REQUIRE(trades[0].price == 100);
-    REQUIRE(trades[0].qty == 10);
-    REQUIRE(trades[0].maker_id == 1);
-    REQUIRE(trades[0].taker_id == 2);
+    REQUIRE(result.trades.size() == 1);
+    REQUIRE(result.trades[0].price == 100);
+    REQUIRE(result.trades[0].qty == 10);
+    REQUIRE(result.trades[0].maker_id == 1);
+    REQUIRE(result.trades[0].taker_id == 2);
     // Book should be empty
     REQUIRE_FALSE(book.best_ask().has_value());
     REQUIRE_FALSE(book.best_bid().has_value());
@@ -116,13 +116,13 @@ TEST_CASE("Limit sell exact fill") {
 
     book.add_resting_order(limit_buy(1, 100, 10));
 
-    auto trades = engine.process_order(limit_sell(2, 100, 10));
+    auto result = engine.process_order(limit_sell(2, 100, 10));
 
-    REQUIRE(trades.size() == 1);
-    REQUIRE(trades[0].price == 100);
-    REQUIRE(trades[0].qty == 10);
-    REQUIRE(trades[0].maker_id == 1);
-    REQUIRE(trades[0].taker_id == 2);
+    REQUIRE(result.trades.size() == 1);
+    REQUIRE(result.trades[0].price == 100);
+    REQUIRE(result.trades[0].qty == 10);
+    REQUIRE(result.trades[0].maker_id == 1);
+    REQUIRE(result.trades[0].taker_id == 2);
     REQUIRE_FALSE(book.best_bid().has_value());
     REQUIRE_FALSE(book.best_ask().has_value());
 }
@@ -134,10 +134,10 @@ TEST_CASE("Limit buy partial fill — remainder rests") {
     book.add_resting_order(limit_sell(1, 100, 5));
 
     // Buy 10, only 5 available
-    auto trades = engine.process_order(limit_buy(2, 100, 10));
+    auto result = engine.process_order(limit_buy(2, 100, 10));
 
-    REQUIRE(trades.size() == 1);
-    REQUIRE(trades[0].qty == 5);
+    REQUIRE(result.trades.size() == 1);
+    REQUIRE(result.trades[0].qty == 5);
     // Remaining 5 rests as a bid
     REQUIRE(book.best_bid().value() == 100);
     REQUIRE_FALSE(book.best_ask().has_value());
@@ -149,10 +149,10 @@ TEST_CASE("Limit sell partial fill — remainder rests") {
 
     book.add_resting_order(limit_buy(1, 100, 5));
 
-    auto trades = engine.process_order(limit_sell(2, 100, 10));
+    auto result = engine.process_order(limit_sell(2, 100, 10));
 
-    REQUIRE(trades.size() == 1);
-    REQUIRE(trades[0].qty == 5);
+    REQUIRE(result.trades.size() == 1);
+    REQUIRE(result.trades[0].qty == 5);
     REQUIRE(book.best_ask().value() == 100);
     REQUIRE_FALSE(book.best_bid().has_value());
 }
@@ -166,15 +166,15 @@ TEST_CASE("Limit buy sweeps multiple price levels") {
     book.add_resting_order(limit_sell(3, 102, 5));
 
     // Buy 12 at limit 102 — should sweep 100 (5), 101 (5), 102 (2)
-    auto trades = engine.process_order(limit_buy(10, 102, 12));
+    auto result = engine.process_order(limit_buy(10, 102, 12));
 
-    REQUIRE(trades.size() == 3);
-    REQUIRE(trades[0].price == 100);
-    REQUIRE(trades[0].qty == 5);
-    REQUIRE(trades[1].price == 101);
-    REQUIRE(trades[1].qty == 5);
-    REQUIRE(trades[2].price == 102);
-    REQUIRE(trades[2].qty == 2);
+    REQUIRE(result.trades.size() == 3);
+    REQUIRE(result.trades[0].price == 100);
+    REQUIRE(result.trades[0].qty == 5);
+    REQUIRE(result.trades[1].price == 101);
+    REQUIRE(result.trades[1].qty == 5);
+    REQUIRE(result.trades[2].price == 102);
+    REQUIRE(result.trades[2].qty == 2);
 
     // 3 remaining at 102
     REQUIRE(book.best_ask().value() == 102);
@@ -190,15 +190,15 @@ TEST_CASE("Limit sell sweeps multiple price levels") {
     book.add_resting_order(limit_buy(3, 100, 5));
 
     // Sell 12 at limit 100 — should sweep 102 (5), 101 (5), 100 (2)
-    auto trades = engine.process_order(limit_sell(10, 100, 12));
+    auto result = engine.process_order(limit_sell(10, 100, 12));
 
-    REQUIRE(trades.size() == 3);
-    REQUIRE(trades[0].price == 102);
-    REQUIRE(trades[0].qty == 5);
-    REQUIRE(trades[1].price == 101);
-    REQUIRE(trades[1].qty == 5);
-    REQUIRE(trades[2].price == 100);
-    REQUIRE(trades[2].qty == 2);
+    REQUIRE(result.trades.size() == 3);
+    REQUIRE(result.trades[0].price == 102);
+    REQUIRE(result.trades[0].qty == 5);
+    REQUIRE(result.trades[1].price == 101);
+    REQUIRE(result.trades[1].qty == 5);
+    REQUIRE(result.trades[2].price == 100);
+    REQUIRE(result.trades[2].qty == 2);
 
     REQUIRE(book.best_bid().value() == 100);
     REQUIRE_FALSE(book.best_ask().has_value());
@@ -212,16 +212,16 @@ TEST_CASE("Limit buy fills multiple orders at same price level (FIFO)") {
     book.add_resting_order(limit_sell(2, 100, 4));
     book.add_resting_order(limit_sell(3, 100, 3));
 
-    auto trades = engine.process_order(limit_buy(10, 100, 10));
+    auto result = engine.process_order(limit_buy(10, 100, 10));
 
-    REQUIRE(trades.size() == 3);
+    REQUIRE(result.trades.size() == 3);
     // FIFO: order 1, then 2, then 3
-    REQUIRE(trades[0].maker_id == 1);
-    REQUIRE(trades[0].qty == 3);
-    REQUIRE(trades[1].maker_id == 2);
-    REQUIRE(trades[1].qty == 4);
-    REQUIRE(trades[2].maker_id == 3);
-    REQUIRE(trades[2].qty == 3);
+    REQUIRE(result.trades[0].maker_id == 1);
+    REQUIRE(result.trades[0].qty == 3);
+    REQUIRE(result.trades[1].maker_id == 2);
+    REQUIRE(result.trades[1].qty == 4);
+    REQUIRE(result.trades[2].maker_id == 3);
+    REQUIRE(result.trades[2].qty == 3);
 
     REQUIRE_FALSE(book.best_ask().has_value());
     REQUIRE_FALSE(book.best_bid().has_value());
@@ -236,11 +236,11 @@ TEST_CASE("Limit buy stops at price limit") {
     book.add_resting_order(limit_sell(3, 102, 5));
 
     // Buy at limit 101 — should only take levels 100 and 101
-    auto trades = engine.process_order(limit_buy(10, 101, 20));
+    auto result = engine.process_order(limit_buy(10, 101, 20));
 
-    REQUIRE(trades.size() == 2);
-    REQUIRE(trades[0].price == 100);
-    REQUIRE(trades[1].price == 101);
+    REQUIRE(result.trades.size() == 2);
+    REQUIRE(result.trades[0].price == 100);
+    REQUIRE(result.trades[1].price == 101);
 
     // Remaining 10 rests at 101
     REQUIRE(book.best_bid().value() == 101);
@@ -256,11 +256,11 @@ TEST_CASE("Limit sell stops at price limit") {
     book.add_resting_order(limit_buy(3, 100, 5));
 
     // Sell at limit 101 — should only take levels 102 and 101
-    auto trades = engine.process_order(limit_sell(10, 101, 20));
+    auto result = engine.process_order(limit_sell(10, 101, 20));
 
-    REQUIRE(trades.size() == 2);
-    REQUIRE(trades[0].price == 102);
-    REQUIRE(trades[1].price == 101);
+    REQUIRE(result.trades.size() == 2);
+    REQUIRE(result.trades[0].price == 102);
+    REQUIRE(result.trades[1].price == 101);
 
     REQUIRE(book.best_ask().value() == 101);
     REQUIRE(book.best_bid().value() == 100);
@@ -278,13 +278,13 @@ TEST_CASE("Market buy sweeps all available liquidity") {
     book.add_resting_order(limit_sell(2, 200, 5));
 
     // Market buy ignores price — takes everything it can
-    auto trades = engine.process_order(market_buy(10, 8));
+    auto result = engine.process_order(market_buy(10, 8));
 
-    REQUIRE(trades.size() == 2);
-    REQUIRE(trades[0].price == 100);
-    REQUIRE(trades[0].qty == 5);
-    REQUIRE(trades[1].price == 200);
-    REQUIRE(trades[1].qty == 3);
+    REQUIRE(result.trades.size() == 2);
+    REQUIRE(result.trades[0].price == 100);
+    REQUIRE(result.trades[0].qty == 5);
+    REQUIRE(result.trades[1].price == 200);
+    REQUIRE(result.trades[1].qty == 3);
 
     // Does NOT rest on book (market order)
     REQUIRE_FALSE(book.best_bid().has_value());
@@ -298,13 +298,13 @@ TEST_CASE("Market sell sweeps all available liquidity") {
     book.add_resting_order(limit_buy(1, 200, 5));
     book.add_resting_order(limit_buy(2, 100, 5));
 
-    auto trades = engine.process_order(market_sell(10, 8));
+    auto result = engine.process_order(market_sell(10, 8));
 
-    REQUIRE(trades.size() == 2);
-    REQUIRE(trades[0].price == 200);
-    REQUIRE(trades[0].qty == 5);
-    REQUIRE(trades[1].price == 100);
-    REQUIRE(trades[1].qty == 3);
+    REQUIRE(result.trades.size() == 2);
+    REQUIRE(result.trades[0].price == 200);
+    REQUIRE(result.trades[0].qty == 5);
+    REQUIRE(result.trades[1].price == 100);
+    REQUIRE(result.trades[1].qty == 3);
 
     REQUIRE_FALSE(book.best_ask().has_value());
     REQUIRE(book.best_bid().value() == 100);
@@ -317,10 +317,10 @@ TEST_CASE("Market order unfilled remainder does NOT rest") {
     book.add_resting_order(limit_sell(1, 100, 3));
 
     // Market buy for 10, only 3 available
-    auto trades = engine.process_order(market_buy(10, 10));
+    auto result = engine.process_order(market_buy(10, 10));
 
-    REQUIRE(trades.size() == 1);
-    REQUIRE(trades[0].qty == 3);
+    REQUIRE(result.trades.size() == 1);
+    REQUIRE(result.trades[0].qty == 3);
     // Remaining 7 should NOT be on the book
     REQUIRE_FALSE(book.best_bid().has_value());
     REQUIRE_FALSE(book.best_ask().has_value());
@@ -330,9 +330,9 @@ TEST_CASE("Market order on empty book produces no trades") {
     OrderBook book;
     MatchingEngine engine(book);
 
-    auto trades = engine.process_order(market_buy(1, 10));
+    auto result = engine.process_order(market_buy(1, 10));
 
-    REQUIRE(trades.empty());
+    REQUIRE(result.trades.empty());
     REQUIRE_FALSE(book.best_bid().has_value());
     REQUIRE_FALSE(book.best_ask().has_value());
 }
@@ -345,8 +345,8 @@ TEST_CASE("Zero qty order produces no trades") {
     OrderBook book;
     MatchingEngine engine(book);
 
-    auto trades = engine.process_order(limit_buy(1, 100, 0));
-    REQUIRE(trades.empty());
+    auto result = engine.process_order(limit_buy(1, 100, 0));
+    REQUIRE(result.trades.empty());
     REQUIRE_FALSE(book.best_bid().has_value());
 }
 
@@ -358,10 +358,10 @@ TEST_CASE("Self-trade is not prevented (no self-trade protection)") {
 
     book.add_resting_order(limit_sell(1, 100, 5));
     // Same "participant" buys against their own sell
-    auto trades = engine.process_order(limit_buy(1, 100, 5));
+    auto result = engine.process_order(limit_buy(1, 100, 5));
 
     // Engine matches regardless of ID collision
-    REQUIRE(trades.size() == 1);
+    REQUIRE(result.trades.size() == 1);
 }
 
 TEST_CASE("Cancel after partial fill") {
@@ -371,9 +371,9 @@ TEST_CASE("Cancel after partial fill") {
     book.add_resting_order(limit_sell(1, 100, 10));
 
     // Partially fill: buy 3
-    auto trades = engine.process_order(limit_buy(2, 100, 3));
-    REQUIRE(trades.size() == 1);
-    REQUIRE(trades[0].qty == 3);
+    auto result = engine.process_order(limit_buy(2, 100, 3));
+    REQUIRE(result.trades.size() == 1);
+    REQUIRE(result.trades[0].qty == 3);
 
     // Order 1 should still be resting with 7 remaining
     REQUIRE(book.best_ask().value() == 100);
@@ -397,13 +397,13 @@ TEST_CASE("Multiple orders build and drain book correctly") {
     REQUIRE(book.best_ask().value() == 101);
 
     // Aggressive sell sweeps both bid levels
-    auto trades = engine.process_order(limit_sell(10, 98, 25));
+    auto result = engine.process_order(limit_sell(10, 98, 25));
 
-    REQUIRE(trades.size() == 2);
-    REQUIRE(trades[0].price == 99);
-    REQUIRE(trades[0].qty == 10);
-    REQUIRE(trades[1].price == 98);
-    REQUIRE(trades[1].qty == 15);
+    REQUIRE(result.trades.size() == 2);
+    REQUIRE(result.trades[0].price == 99);
+    REQUIRE(result.trades[0].qty == 10);
+    REQUIRE(result.trades[1].price == 98);
+    REQUIRE(result.trades[1].qty == 15);
 
     // Bid side: 5 left at 98
     REQUIRE(book.best_bid().value() == 98);
@@ -422,20 +422,20 @@ TEST_CASE("Price-time priority across multiple levels and orders") {
 
     // Buy at 100 for 9: should take 99 first (price priority),
     // then 100 FIFO (order 1 then 2)
-    auto trades = engine.process_order(limit_buy(10, 100, 9));
+    auto result = engine.process_order(limit_buy(10, 100, 9));
 
-    REQUIRE(trades.size() == 3);
+    REQUIRE(result.trades.size() == 3);
     // Best ask is 99 (lowest)
-    REQUIRE(trades[0].price == 99);
-    REQUIRE(trades[0].qty == 4);
-    REQUIRE(trades[0].maker_id == 3);
+    REQUIRE(result.trades[0].price == 99);
+    REQUIRE(result.trades[0].qty == 4);
+    REQUIRE(result.trades[0].maker_id == 3);
     // Then 100, FIFO
-    REQUIRE(trades[1].price == 100);
-    REQUIRE(trades[1].qty == 2);
-    REQUIRE(trades[1].maker_id == 1);
-    REQUIRE(trades[2].price == 100);
-    REQUIRE(trades[2].qty == 3);
-    REQUIRE(trades[2].maker_id == 2);
+    REQUIRE(result.trades[1].price == 100);
+    REQUIRE(result.trades[1].qty == 2);
+    REQUIRE(result.trades[1].maker_id == 1);
+    REQUIRE(result.trades[2].price == 100);
+    REQUIRE(result.trades[2].qty == 3);
+    REQUIRE(result.trades[2].maker_id == 2);
 
     REQUIRE_FALSE(book.best_ask().has_value());
     REQUIRE_FALSE(book.best_bid().has_value());

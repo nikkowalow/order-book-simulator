@@ -25,13 +25,21 @@ static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
     }
 }
 
-std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
+OrderResult MatchingEngine::process_order(const Order &incoming)
 {
 
     ScopedTimer timer("process_order");
 
-    if (incoming.qty <= 0)
-        return {};
+    OrderResult result;
+    result.id = incoming.id;
+    result.original_qty = incoming.qty;
+
+    if (incoming.qty <= 0) {
+        result.status = OrderStatus::Rejected;
+        result.filled_qty = 0;
+        result.remaining_qty = 0;
+        return result;
+    }
 
     Order taker = incoming;
     std::vector<Trade> trades;
@@ -57,8 +65,27 @@ std::vector<Trade> MatchingEngine::process_order(const Order &incoming)
 
     emit_trades(trades, &sink_);
 
+    // Compute filled quantity and status
+    long long filled = incoming.qty - taker.qty;
+    result.filled_qty = filled;
+    result.remaining_qty = taker.qty;
+    result.trades = std::move(trades);
 
-    return trades;
+    if (filled == 0) {
+        result.status = OrderStatus::New;
+    } else if (taker.qty == 0) {
+        result.status = OrderStatus::Filled;
+    } else {
+        result.status = OrderStatus::PartiallyFilled;
+    }
+
+    std::cout << "Order " << incoming.id << " processed: "
+              << "original_qty=" << incoming.qty
+              << ", filled_qty=" << result.filled_qty
+              << ", remaining_qty=" << result.remaining_qty
+              << ", status=" << static_cast<int>(result.status)
+              << ", trades=" << result.trades.size() << "\n";
+    return result;
 }
 
 void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades)
