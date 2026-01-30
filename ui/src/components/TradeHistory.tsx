@@ -1,6 +1,6 @@
 import React from "react";
 import { useActivity } from "../hooks/useActivity";
-import { OrderEvent, OrderEventType } from "../types/types";
+import { OrderEvent, OrderEventType, OrderSide } from "../types/types";
 
 function fmt(n: number, decimals = 0) {
   return n.toLocaleString(undefined, {
@@ -65,14 +65,14 @@ export default function TradeHistory() {
 
   //   if (!events) return <div>Loading…</div>;
   const groupedEvents = React.useMemo(() => {
-    const list = events ?? []; // <-- non-null alias
+    const list = events ?? [];
 
     const groups: Record<number, OrderEvent[]> = {};
     for (const e of list) {
       (groups[e.batch_id] ??= []).push(e);
     }
 
-    return Object.values(groups);
+    return Object.values(groups).reverse();
   }, [events]);
 
   if (err) {
@@ -112,14 +112,14 @@ export default function TradeHistory() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr 1fr",
+          gridTemplateColumns: "1fr 1fr 1fr 1fr",
           padding: "8px 12px",
           fontSize: 12,
           color: "rgba(255,255,255,0.45)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <span>Time</span>
+        <span>Side</span>
         <span style={{ textAlign: "center" }}>Status</span>
         <span style={{ textAlign: "right" }}>Price</span>
         <span style={{ textAlign: "right" }}>Qty</span>
@@ -165,15 +165,25 @@ export default function TradeHistory() {
 
               {group.map((e) => (
                 <div
-                  key={e.seq}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr",
+                    gridTemplateColumns: "1fr 1fr 1fr 1fr",
                     padding: "6px 10px",
                     borderBottom: "1px solid rgba(255,255,255,0.04)",
                     fontFamily: "monospace",
                   }}
                 >
+                  <span
+                    style={{
+                      fontWeight: 650,
+                      color:
+                        e.side === OrderSide.Buy
+                          ? "rgb(34,197,94)"
+                          : "rgb(239,68,68)",
+                    }}
+                  >
+                    {e.side}
+                  </span>
                   <span
                     style={{
                       textAlign: "center",

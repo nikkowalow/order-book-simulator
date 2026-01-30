@@ -54,10 +54,10 @@ export default function OrderBookTable() {
       style={{
         width: "100%",
         height: "100%",
-        overflow: "auto",
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
       {/* Header */}
@@ -130,7 +130,8 @@ export default function OrderBookTable() {
           flex: 1,
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          overflow: "hidden",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}>
@@ -153,7 +154,12 @@ export default function OrderBookTable() {
                 key={`bid-${lvl.price}`}
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
               >
-                <BarCell side="bid" value={lvl.qty} max={maxQty} orders={lvl.orders}>
+                <BarCell
+                  side="bid"
+                  value={lvl.qty}
+                  max={maxQty}
+                  orders={lvl.orders}
+                >
                   <span style={{ color: "rgba(255,255,255,0.85)" }}>
                     {fmt(lvl.qty)}
                   </span>
@@ -186,7 +192,12 @@ export default function OrderBookTable() {
                 key={`ask-${lvl.price}`}
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
               >
-                <BarCell side="ask" value={lvl.qty} max={maxQty} orders={lvl.orders}>
+                <BarCell
+                  side="ask"
+                  value={lvl.qty}
+                  max={maxQty}
+                  orders={lvl.orders}
+                >
                   <span style={{ color: "rgb(220,38,38)", fontWeight: 650 }}>
                     {fmt(lvl.price, 1)}
                   </span>

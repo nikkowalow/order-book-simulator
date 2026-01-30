@@ -1,5 +1,10 @@
 export type Side = "bid" | "ask";
 
+export enum OrderSide {
+  Buy = "BUY",
+  Sell = "SELL",
+}
+
 export type Level = {
   price: number;
   qty: number;
@@ -21,13 +26,19 @@ export interface Trade {
   ts: number;
 }
 
-export type OrderEventType = "NEW" | "FILL" | "PARTIAL_FILL" | "CANCELLED" | "REJECTED";
+export type OrderEventType =
+  | "NEW"
+  | "FILL"
+  | "PARTIAL_FILL"
+  | "CANCELLED"
+  | "REJECTED";
 
 export interface OrderEvent {
   seq: number;
   batch_id: number;
   order_id: number;
   type: OrderEventType;
+  side: OrderSide;
   price: number;
   qty: number;
   remaining_qty: number;
