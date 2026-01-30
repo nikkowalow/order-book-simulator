@@ -8,53 +8,16 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+
 #include <book/order_book.hpp>
 #include <engine/matching_engine.hpp>
-#include <types/types.hpp>
-#include <sstream>
 #include <sim/seed_book.hpp>
 #include <server/http_handlers.hpp>
+#include <server/book_serializer.hpp>
 #include <logging/journal_trade_sink.hpp>
 #include <engine/multi_trade_sink.hpp>
 #include <server/ws_trade_sink.hpp>
 #include <market_maker/market_maker.hpp>
-
-static size_t count_lines(const std::string &s)
-{
-    size_t n = 0;
-    for (char c : s)
-        if (c == '\n')
-            ++n;
-    if (!s.empty() && s.back() != '\n')
-        ++n;
-    return n;
-}
-
-static void move_cursor_up(size_t lines)
-{
-    if (lines == 0)
-        return;
-    // Same as repeating \033[F N times, but more efficient
-    std::cout << "\033[" << lines << "F";
-}
-
-static std::string render_book_frame(const OrderBook &book)
-{
-    std::ostringstream oss;
-    book.print_book(oss);
-    return oss.str();
-}
-
-static bool parse_cancel_line(const std::string &line, long long &order_id)
-{
-    std::istringstream iss(line);
-    std::string cmd;
-    iss >> cmd;
-    if (cmd != "CANCEL")
-        return false;
-    iss >> order_id;
-    return !iss.fail();
-}
 
 static bool send_all(int fd, const std::string &msg)
 {
@@ -72,51 +35,8 @@ static bool send_all(int fd, const std::string &msg)
     return true;
 }
 
-static void send_best_quote(int client_fd, const OrderBook &book)
-{
-    auto bb = book.best_bid();
-    auto ba = book.best_ask();
-
-    std::string out = "BOOK BEST_BID ";
-    out += bb ? std::to_string(*bb) : "NONE";
-    out += " BEST_ASK ";
-    out += ba ? std::to_string(*ba) : "NONE";
-    out += "\n";
-
-    send_all(client_fd, out);
-}
-
-static bool parse_order_line(const std::string &line, Order &out)
-{
-    std::istringstream iss(line);
-
-    std::string side_str;
-    long long id;
-    int price;
-    long long qty;
-
-    iss >> side_str;
-
-    if (side_str != "BUY" && side_str != "SELL")
-    {
-        return false;
-    }
-
-    iss >> id >> price >> qty;
-    if (iss.fail())
-        return false;
-
-    out.id = id;
-    out.side = (side_str == "BUY") ? Side::Buy : Side::Sell;
-    out.price = price;
-    out.qty = qty;
-
-    return true;
-}
-
 int main(int argc, char **argv)
 {
-
     OrderBook book;
     seed_book(book);
 
@@ -125,46 +45,7 @@ int main(int argc, char **argv)
     ws_sink.start();
 
     book.set_on_change([&ws_sink, &book]() {
-        std::ostringstream oss;
-        oss << "{\"bids\":[";
-        bool first = true;
-        int depth = 20;
-        int i = 0;
-        for (const auto& [price, q] : book.bids()) {
-            if (i++ >= depth) break;
-            long long qty = 0;
-            for (const auto& o : q) qty += o.qty;
-            if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
-            bool first_order = true;
-            for (const auto& o : q) {
-                if (!first_order) oss << ",";
-                oss << o.qty;
-                first_order = false;
-            }
-            oss << "]}";
-            first = false;
-        }
-        oss << "],\"asks\":[";
-        first = true;
-        i = 0;
-        for (const auto& [price, q] : book.asks()) {
-            if (i++ >= depth) break;
-            long long qty = 0;
-            for (const auto& o : q) qty += o.qty;
-            if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
-            bool first_order = true;
-            for (const auto& o : q) {
-                if (!first_order) oss << ",";
-                oss << o.qty;
-                first_order = false;
-            }
-            oss << "]}";
-            first = false;
-        }
-        oss << "]}";
-        ws_sink.broadcast(oss.str());
+        ws_sink.broadcast(serialize_book_json(book));
     });
 
     MultiTradeSink multi_sink;
@@ -184,6 +65,7 @@ int main(int argc, char **argv)
                             { http.listen("0.0.0.0", 8080); });
     http_thread.detach();
 
+    // Legacy TCP echo server (port 9000)
     int port = 9000;
     if (argc >= 2)
         port = std::stoi(argv[1]);
@@ -215,6 +97,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    std::cout << "Server running: HTTP=8080, WS=9001, TCP=" << port << "\n";
+
     while (true)
     {
         sockaddr_in client_addr{};
@@ -235,19 +119,13 @@ int main(int argc, char **argv)
             ssize_t n = recv(client_fd, buf, sizeof(buf) - 1, 0);
 
             if (n <= 0)
-            {
-                break; // break inner loop only
-            }
+                break;
 
             std::string msg(buf, buf + n);
 
-            // trim newline
             while (!msg.empty() && (msg.back() == '\n' || msg.back() == '\r'))
-            {
                 msg.pop_back();
-            }
 
-            // std::cout << "Received: " << msg << "\n";
             std::string reply = "SERVER_ECHO: " + msg + "\n";
             if (!send_all(client_fd, reply))
             {

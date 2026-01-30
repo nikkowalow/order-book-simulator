@@ -1,4 +1,5 @@
 #include "http_handlers.hpp"
+#include "book_serializer.hpp"
 
 #include <atomic>
 #include <cctype>
@@ -238,57 +239,9 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
 
     // GET /book
     http.Get("/book", [&](const httplib::Request &, httplib::Response &res) {
-        std::ostringstream oss;
-
         std::lock_guard<std::mutex> lk(book_mtx);
-
-        oss << "{\"bids\":[";
-        bool first = true;
-        int depth = 20;
-        int i = 0;
-
-        for (const auto& [price, q] : book.bids()) {
-            if (i++ >= depth) break;
-            long long qty = 0;
-            for (const auto& o : q) qty += o.qty;
-
-            if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
-            bool first_order = true;
-            for (const auto& o : q) {
-                if (!first_order) oss << ",";
-                oss << o.qty;
-                first_order = false;
-            }
-            oss << "]}";
-            first = false;
-        }
-
-        oss << "],\"asks\":[";
-        first = true;
-        i = 0;
-
-        for (const auto& [price, q] : book.asks()) {
-            if (i++ >= depth) break;
-            long long qty = 0;
-            for (const auto& o : q) qty += o.qty;
-
-            if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
-            bool first_order = true;
-            for (const auto& o : q) {
-                if (!first_order) oss << ",";
-                oss << o.qty;
-                first_order = false;
-            }
-            oss << "]}";
-            first = false;
-        }
-
-        oss << "]}";
-
         res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content(oss.str(), "application/json");
+        res.set_content(serialize_book_json(book), "application/json");
     });
     
     http.Get("/trades", [&](const httplib::Request& req, httplib::Response& res) {

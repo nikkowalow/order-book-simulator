@@ -38,6 +38,7 @@ target_link_libraries(osmium PRIVATE core)
 add_executable(tcp_server
     src/server/tcp_server.cpp
     src/server/http_handlers.cpp
+    src/server/book_serializer.cpp
     src/server/ws_trade_sink.cpp
     src/logging/journal_trade_sink.cpp
     src/market_maker/market_maker.cpp
