@@ -253,7 +253,14 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
             for (const auto& o : q) qty += o.qty;
 
             if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << "}";
+            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
+            bool first_order = true;
+            for (const auto& o : q) {
+                if (!first_order) oss << ",";
+                oss << o.qty;
+                first_order = false;
+            }
+            oss << "]}";
             first = false;
         }
 
@@ -267,7 +274,14 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
             for (const auto& o : q) qty += o.qty;
 
             if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << "}";
+            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
+            bool first_order = true;
+            for (const auto& o : q) {
+                if (!first_order) oss << ",";
+                oss << o.qty;
+                first_order = false;
+            }
+            oss << "]}";
             first = false;
         }
 

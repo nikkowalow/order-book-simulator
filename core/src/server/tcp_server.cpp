@@ -135,7 +135,14 @@ int main(int argc, char **argv)
             long long qty = 0;
             for (const auto& o : q) qty += o.qty;
             if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << "}";
+            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
+            bool first_order = true;
+            for (const auto& o : q) {
+                if (!first_order) oss << ",";
+                oss << o.qty;
+                first_order = false;
+            }
+            oss << "]}";
             first = false;
         }
         oss << "],\"asks\":[";
@@ -146,7 +153,14 @@ int main(int argc, char **argv)
             long long qty = 0;
             for (const auto& o : q) qty += o.qty;
             if (!first) oss << ",";
-            oss << "{\"price\":" << price << ",\"qty\":" << qty << "}";
+            oss << "{\"price\":" << price << ",\"qty\":" << qty << ",\"orders\":[";
+            bool first_order = true;
+            for (const auto& o : q) {
+                if (!first_order) oss << ",";
+                oss << o.qty;
+                first_order = false;
+            }
+            oss << "]}";
             first = false;
         }
         oss << "]}";
@@ -169,15 +183,6 @@ int main(int argc, char **argv)
     std::thread http_thread([&]()
                             { http.listen("0.0.0.0", 8080); });
     http_thread.detach();
-
-    size_t last_book_lines = 0;
-
-    // initial draw
-    {
-        auto frame = render_book_frame(book);
-        std::cout << frame << std::flush;
-        last_book_lines = count_lines(frame);
-    }
 
     int port = 9000;
     if (argc >= 2)
@@ -243,21 +248,6 @@ int main(int argc, char **argv)
             }
 
             // std::cout << "Received: " << msg << "\n";
-            if (msg == "PRINT")
-            {
-                // book.print_book(std::cout);
-
-                // also send something back to the client so it sees a response
-                send_all(client_fd, "OK PRINTED\n");
-                continue;
-            }
-            if (msg == "QUIT")
-            {
-                send_all(client_fd, "BYE\n");
-                std::cout << "Client quit\n";
-                break; // break inner loop only
-            }
-
             std::string reply = "SERVER_ECHO: " + msg + "\n";
             if (!send_all(client_fd, reply))
             {
