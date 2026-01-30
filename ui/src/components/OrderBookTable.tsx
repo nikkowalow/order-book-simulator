@@ -143,7 +143,7 @@ export default function OrderBookTable() {
                 key={`bid-${lvl.price}`}
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
               >
-                <BarCell side="bid" value={lvl.qty} max={maxQty}>
+                <BarCell side="bid" value={lvl.qty} max={maxQty} orders={lvl.orders}>
                   <span style={{ color: "rgba(255,255,255,0.85)" }}>
                     {fmt(lvl.qty)}
                   </span>
@@ -176,7 +176,7 @@ export default function OrderBookTable() {
                 key={`ask-${lvl.price}`}
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
               >
-                <BarCell side="ask" value={lvl.qty} max={maxQty}>
+                <BarCell side="ask" value={lvl.qty} max={maxQty} orders={lvl.orders}>
                   <span style={{ color: "rgb(220,38,38)", fontWeight: 650 }}>
                     {fmt(lvl.price, 1)}
                   </span>

@@ -3,6 +3,7 @@ export type Side = "bid" | "ask";
 export type Level = {
   price: number;
   qty: number;
+  orders?: number[];
 };
 
 export type Book = {
