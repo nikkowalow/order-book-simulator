@@ -17,25 +17,10 @@ export default function App() {
       }}
     >
       {/* Left: Analytics (full height) */}
-      <div
-        style={{ gridColumn: "1", gridRow: "1 / 3", overflow: "auto" }}
-        className="panel"
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-            color: "rgba(255,255,255,0.3)",
-            fontSize: 18,
-            fontWeight: 600,
-          }}
-        >
-          Analytics (TODO)
-        </div>
-      </div>
 
+      <div style={{ gridColumn: "1", gridRow: "1 / 3", overflow: "auto" }}>
+        <TradeHistory />
+      </div>
       {/* Center-top: Order Book Table */}
       <div style={{ gridColumn: "2", gridRow: "1", overflow: "auto" }}>
         <OrderBookTable />
@@ -57,8 +42,23 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        <div style={{ overflow: "auto" }}>
-          <TradeHistory />
+        <div
+          style={{ gridColumn: "1", gridRow: "1 / 3", overflow: "auto" }}
+          className="panel"
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "rgba(255,255,255,0.3)",
+              fontSize: 18,
+              fontWeight: 600,
+            }}
+          >
+            Analytics (TODO)
+          </div>
         </div>
 
         <div style={{ overflow: "auto" }}>

@@ -257,5 +257,19 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         std::string body = read_last_trades_jsonl("trades.jsonl", limit);
         res.set_content(body, "application/json");
     });
+
+    http.Get("/activity", [&](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+
+        size_t limit = 100;
+        if (req.has_param("limit")) {
+            limit = std::stoul(req.get_param_value("limit"));
+            if (limit == 0) limit = 100;
+            if (limit > 1000) limit = 1000;
+        }
+
+        std::string body = read_last_trades_jsonl("orders.jsonl", limit);
+        res.set_content(body, "application/json");
+    });
 }
 

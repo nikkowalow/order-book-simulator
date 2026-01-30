@@ -20,3 +20,16 @@ export interface Trade {
   taker: number;
   ts: number;
 }
+
+export type OrderEventType = "NEW" | "FILL" | "PARTIAL_FILL" | "CANCELLED" | "REJECTED";
+
+export interface OrderEvent {
+  seq: number;
+  batch_id: number;
+  order_id: number;
+  type: OrderEventType;
+  price: number;
+  qty: number;
+  remaining_qty: number;
+  ts: number;
+}
