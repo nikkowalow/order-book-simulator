@@ -8,9 +8,23 @@ function fmt(n: number, decimals = 0) {
   });
 }
 
-function fmtTime(ts: number) {
-  const d = new Date(ts / 1_000_000);
-  return d.toLocaleTimeString();
+function fmtDateTime(ts: number) {
+  const d = new Date(ts / 1_000_000); // ns → ms (already fixed)
+
+  const date = d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  return `${date} ${time}`;
 }
 
 export default function TradeHistory() {
@@ -53,14 +67,14 @@ export default function TradeHistory() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1.2fr 1fr 1fr",
+          gridTemplateColumns: "2fr 1fr 1fr",
           padding: "8px 12px",
           fontSize: 12,
           color: "rgba(255,255,255,0.45)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <span>Time</span>
+        <span>Time (UTC)</span>
         <span style={{ textAlign: "right" }}>Price</span>
         <span style={{ textAlign: "right" }}>Size</span>
       </div>
@@ -72,14 +86,14 @@ export default function TradeHistory() {
             key={t.seq}
             style={{
               display: "grid",
-              gridTemplateColumns: "1.2fr 1fr 1fr",
+              gridTemplateColumns: "2fr 1fr 1fr",
               padding: "6px 12px",
               borderBottom: "1px solid rgba(255,255,255,0.04)",
               fontFamily: "monospace",
             }}
           >
             <span style={{ color: "rgba(255,255,255,0.6)" }}>
-              {fmtTime(t.ts)}
+              {fmtDateTime(t.ts)}
             </span>
 
             <span

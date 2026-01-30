@@ -17,8 +17,8 @@ static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
     for (auto& t : trades) {
         t.seq = global_seq.fetch_add(1, std::memory_order_relaxed);
         t.trade_id = global_trade_id.fetch_add(1, std::memory_order_relaxed);
-        t.timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::steady_clock::now().time_since_epoch()
+        t.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
         );
 
         sink->on_trade(t);
