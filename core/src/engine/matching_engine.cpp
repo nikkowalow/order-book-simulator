@@ -25,7 +25,7 @@ static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
     }
 }
 
-void MatchingEngine::emit_order_event(long long batch_id, long long order_id, OrderEventType type, int price, long long qty, long long remaining)
+void MatchingEngine::emit_order_event(long long batch_id, long long order_id, OrderStatus status, Side side, int price, long long qty, long long remaining)
 {
     if (!order_sink_) return;
 
@@ -33,7 +33,8 @@ void MatchingEngine::emit_order_event(long long batch_id, long long order_id, Or
     event.seq = event_seq_.fetch_add(1, std::memory_order_relaxed);
     event.batch_id = batch_id;
     event.order_id = order_id;
-    event.type = type;
+    event.status = status;
+    event.side = side;
     event.price = price;
     event.qty = qty;
     event.remaining_qty = remaining;
@@ -60,11 +61,11 @@ OrderResult MatchingEngine::process_order(const Order &incoming)
         result.status = OrderStatus::Rejected;
         result.filled_qty = 0;
         result.remaining_qty = 0;
-        emit_order_event(batch_id, incoming.id, OrderEventType::Rejected, incoming.price, 0, 0);
+        emit_order_event(batch_id, incoming.id, OrderStatus::Rejected, incoming.side,incoming.price, 0, 0);
         return result;
     }
 
-    emit_order_event(batch_id, incoming.id, OrderEventType::New, incoming.price, incoming.qty, incoming.qty);
+    emit_order_event(batch_id, incoming.id, OrderStatus::New, incoming.side, incoming.price, incoming.qty, incoming.qty);
 
     Order taker = incoming;
     std::vector<Trade> trades;
@@ -100,10 +101,10 @@ OrderResult MatchingEngine::process_order(const Order &incoming)
         result.status = OrderStatus::New;
     } else if (taker.qty == 0) {
         result.status = OrderStatus::Filled;
-        emit_order_event(batch_id, incoming.id, OrderEventType::Fill, incoming.price, filled, 0);
+        emit_order_event(batch_id, incoming.id, OrderStatus::Filled, taker.side, incoming.price, filled, 0);
     } else {
         result.status = OrderStatus::PartiallyFilled;
-        emit_order_event(batch_id, incoming.id, OrderEventType::PartialFill, incoming.price, filled, taker.qty);
+        emit_order_event(batch_id, incoming.id, OrderStatus::PartiallyFilled, taker.side, incoming.price, filled, taker.qty);
     }
 
     return result;
@@ -143,12 +144,12 @@ void MatchingEngine::match_buy(Order &taker, std::vector<Trade> &trades, long lo
             // Emit fill event for maker
             if (maker.qty == 0)
             {
-                emit_order_event(batch_id, maker.id, OrderEventType::Fill, ask_price, fill_qty, 0);
+                emit_order_event(batch_id, maker.id, OrderStatus::Filled, maker.side, ask_price, fill_qty, 0);
                 q->pop_front();
             }
             else
             {
-                emit_order_event(batch_id, maker.id, OrderEventType::PartialFill, ask_price, fill_qty, maker.qty);
+                emit_order_event(batch_id, maker.id, OrderStatus::PartiallyFilled, maker.side, ask_price, fill_qty, maker.qty);
             }
         }
 
@@ -190,12 +191,12 @@ void MatchingEngine::match_sell(Order &taker, std::vector<Trade> &trades, long l
             // Emit fill event for maker
             if (maker.qty == 0)
             {
-                emit_order_event(batch_id, maker.id, OrderEventType::Fill, bid_price, fill_qty, 0);
+                emit_order_event(batch_id, maker.id, OrderStatus::Filled, maker.side, bid_price, fill_qty, 0);
                 q->pop_front();
             }
             else
             {
-                emit_order_event(batch_id, maker.id, OrderEventType::PartialFill, bid_price, fill_qty, maker.qty);
+                emit_order_event(batch_id, maker.id, OrderStatus::PartiallyFilled, maker.side, bid_price, fill_qty, maker.qty);
             }
         }
 

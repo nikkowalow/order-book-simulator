@@ -1,20 +1,15 @@
 #pragma once
 
 #include <chrono>
+#include "types/types.hpp"
 
-enum class OrderEventType {
-    New,
-    Fill,
-    PartialFill,
-    Cancelled,
-    Rejected
-};
 
 struct OrderEvent {
     long long seq;
-    long long batch_id;  // Groups related events from same order processing
+    long long batch_id;  
     long long order_id;
-    OrderEventType type;
+    OrderStatus status;
+    Side side;
     int price;
     long long qty;
     long long remaining_qty;

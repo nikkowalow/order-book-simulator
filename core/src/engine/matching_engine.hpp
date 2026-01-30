@@ -26,5 +26,5 @@ private:
 
     void match_buy(Order &taker, std::vector<Trade> &trades, long long batch_id);
     void match_sell(Order &taker, std::vector<Trade> &trades, long long batch_id);
-    void emit_order_event(long long batch_id, long long order_id, OrderEventType type, int price, long long qty, long long remaining);
+    void emit_order_event(long long batch_id, long long order_id, OrderStatus status, Side side, int price, long long qty, long long remaining);
 };

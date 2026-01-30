@@ -1,12 +1,21 @@
 #include "logging/journal_order_sink.hpp"
+#include "types/types.hpp"
 
-static const char* event_type_str(OrderEventType type) {
+static const char* event_type_str(OrderStatus type) {
     switch (type) {
-        case OrderEventType::New: return "NEW";
-        case OrderEventType::Fill: return "FILL";
-        case OrderEventType::PartialFill: return "PARTIAL_FILL";
-        case OrderEventType::Cancelled: return "CANCELLED";
-        case OrderEventType::Rejected: return "REJECTED";
+        case OrderStatus::New: return "NEW";
+        case OrderStatus::Filled: return "FILL";
+        case OrderStatus::PartiallyFilled: return "PARTIAL_FILL";
+        case OrderStatus::Canceled: return "CANCELLED";
+        case OrderStatus::Rejected: return "REJECTED";
+    }
+    return "UNKNOWN";
+}
+
+static const char* side_str(Side side) {
+    switch (side) {
+        case Side::Buy: return "BUY";
+        case Side::Sell: return "SELL";
     }
     return "UNKNOWN";
 }
@@ -25,7 +34,8 @@ void JournalOrderSink::on_order_event(const OrderEvent& e)
         << "\"seq\":" << e.seq << ","
         << "\"batch_id\":" << e.batch_id << ","
         << "\"order_id\":" << e.order_id << ","
-        << "\"type\":\"" << event_type_str(e.type) << "\","
+        << "\"type\":\"" << event_type_str(e.status) << "\","
+        << "\"side\":\"" << side_str(e.side) << "\","
         << "\"price\":" << e.price << ","
         << "\"qty\":" << e.qty << ","
         << "\"remaining_qty\":" << e.remaining_qty << ","
