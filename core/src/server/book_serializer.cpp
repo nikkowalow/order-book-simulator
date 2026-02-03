@@ -49,3 +49,37 @@ std::string serialize_book_json(const OrderBook& book, int depth)
     oss << "]}";
     return oss.str();
 }
+
+std::string serialize_orders_json(const OrderBook& book)
+{
+    std::ostringstream oss;
+    oss << "[";
+    bool first = true;
+
+    // Bids
+    for (const auto& [price, q] : book.bids()) {
+        for (const auto& o : q) {
+            if (!first) oss << ",";
+            oss << "{\"id\":" << o.id
+                << ",\"side\":\"bid\""
+                << ",\"price\":" << price
+                << ",\"qty\":" << o.qty << "}";
+            first = false;
+        }
+    }
+
+    // Asks
+    for (const auto& [price, q] : book.asks()) {
+        for (const auto& o : q) {
+            if (!first) oss << ",";
+            oss << "{\"id\":" << o.id
+                << ",\"side\":\"ask\""
+                << ",\"price\":" << price
+                << ",\"qty\":" << o.qty << "}";
+            first = false;
+        }
+    }
+
+    oss << "]";
+    return oss.str();
+}

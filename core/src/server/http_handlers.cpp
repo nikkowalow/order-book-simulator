@@ -271,5 +271,11 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         std::string body = read_last_trades_jsonl("orders.jsonl", limit);
         res.set_content(body, "application/json");
     });
+
+    http.Get("/orders", [&](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lk(book_mtx);
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(serialize_orders_json(book), "application/json");
+    });
 }
 
