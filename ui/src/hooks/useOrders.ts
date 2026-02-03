@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RestingOrder } from "../types/types";
-import { SERVER_URL } from "../config/config";
-
-const WS_URL = "ws://localhost:9001";
-const HTTP_URL = "http://localhost:8080";
+import { SERVER_URL, WS_URL } from "../config/config";
 
 export function useOrders() {
   const [orders, setOrders] = useState<RestingOrder[] | null>(null);

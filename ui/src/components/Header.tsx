@@ -1,64 +1,64 @@
 import { useEffect, useState } from "react";
 import { SERVER_URL } from "../config/config";
 
-function ToggleSwitch({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <button
-      onClick={onChange}
-      style={{
-        width: 40,
-        height: 22,
-        borderRadius: 11,
-        border: "none",
-        background: checked ? "rgb(34, 197, 94)" : "rgba(255,255,255,0.2)",
-        position: "relative",
-        cursor: "pointer",
-        transition: "background 0.2s",
-      }}
-    >
-      <div
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          background: "white",
-          position: "absolute",
-          top: 3,
-          left: checked ? 21 : 3,
-          transition: "left 0.2s",
-        }}
-      />
-    </button>
-  );
-}
+// function ToggleSwitch({
+//   checked,
+//   onChange,
+// }: {
+//   checked: boolean;
+//   onChange: () => void;
+// }) {
+//   return (
+//     <button
+//       onClick={onChange}
+//       style={{
+//         width: 40,
+//         height: 22,
+//         borderRadius: 11,
+//         border: "none",
+//         background: checked ? "rgb(34, 197, 94)" : "rgba(255,255,255,0.2)",
+//         position: "relative",
+//         cursor: "pointer",
+//         transition: "background 0.2s",
+//       }}
+//     >
+//       <div
+//         style={{
+//           width: 16,
+//           height: 16,
+//           borderRadius: 8,
+//           background: "white",
+//           position: "absolute",
+//           top: 3,
+//           left: checked ? 21 : 3,
+//           transition: "left 0.2s",
+//         }}
+//       />
+//     </button>
+//   );
+// }
 
 export default function Header() {
-  const [mmRunning, setMmRunning] = useState<boolean>(true);
+  //     const [mmRunning, setMmRunning] = useState<boolean>(true);
 
-  useEffect(() => {
-    fetch(`${SERVER_URL}/market_maker/status`)
-      .then((res) => res.json())
-      .then((data) => setMmRunning(data.running))
-      .catch(() => setMmRunning(false));
-  }, []);
+  //   useEffect(() => {
+  //     fetch(`${SERVER_URL}/market_maker/status`)
+  //       .then((res) => res.json())
+  //       .then((data) => setMmRunning(data.running))
+  //       .catch(() => setMmRunning(false));
+  //   }, []);
 
-  const toggleMarketMaker = async () => {
-    try {
-      const res = await fetch(`${SERVER_URL}/market_maker/toggle`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      setMmRunning(data.running);
-    } catch {
-      // ignore
-    }
-  };
+  //   const toggleMarketMaker = async () => {
+  //     try {
+  //       const res = await fetch(`${SERVER_URL}/market_maker/toggle`, {
+  //         method: "POST",
+  //       });
+  //       const data = await res.json();
+  //       setMmRunning(data.running);
+  //     } catch {
+  //       // ignore
+  //     }
+  //   };
 
   return (
     <div
