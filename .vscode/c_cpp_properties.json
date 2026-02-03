@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include",
-                "/opt/homebrew/include"
+                "/opt/homebrew/include",
+                "/opt/homebrew/Cellar/boost/1.90.0/include/boost"
             ],
             "defines": [],
             "compilerPath": "/opt/homebrew/opt/llvm/bin/clang",
