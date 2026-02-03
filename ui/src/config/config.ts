@@ -1,2 +1,2 @@
-export const SERVER_URL = "http://18.221.171.195:8080";
-export const WS_URL = "ws://18.221.171.195:9001";
+export const SERVER_URL = "https://api.bloomcore.app";
+export const WS_URL = "wss://api.bloomcore.app/ws";
