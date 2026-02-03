@@ -25,6 +25,31 @@ static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
     }
 }
 
+PreflightResult MatchingEngine::preflight_check(const Order& order)
+{
+    if (order.qty <= 0) {
+        return PreflightResult::rejected("quantity must be positive");
+    }
+
+    if (order.type == OrderType::Limit && order.price <= 0) {
+        return PreflightResult::rejected("limit order price must be positive");
+    }
+
+    if (order.type == OrderType::Market) {
+        if (order.side == Side::Buy) {
+            if (!book_.best_ask().has_value()) {
+                return PreflightResult::cancelled("no asks available for market buy");
+            }
+        } else {
+            if (!book_.best_bid().has_value()) {
+                return PreflightResult::cancelled("no bids available for market sell");
+            }
+        }
+    }
+
+    return PreflightResult::ok();
+}
+
 void MatchingEngine::emit_order_event(long long batch_id, long long order_id, OrderStatus status, Side side, int price, long long qty, long long remaining)
 {
     if (!order_sink_) return;
@@ -57,11 +82,21 @@ OrderResult MatchingEngine::process_order(const Order &incoming)
     result.id = incoming.id;
     result.original_qty = incoming.qty;
 
-    if (incoming.qty <= 0) {
-        result.status = OrderStatus::Rejected;
-        result.filled_qty = 0;
-        result.remaining_qty = 0;
-        emit_order_event(batch_id, incoming.id, OrderStatus::Rejected, incoming.side,incoming.price, 0, 0);
+    // Preflight validation
+    PreflightResult preflight = preflight_check(incoming);
+    if (!preflight.is_ok()) {
+        if (preflight.status == PreflightStatus::Rejected) {
+            result.status = OrderStatus::Rejected;
+            result.filled_qty = 0;
+            result.remaining_qty = 0;
+            emit_order_event(batch_id, incoming.id, OrderStatus::Rejected, incoming.side, incoming.price, 0, 0);
+        } else {
+            // Cancelled (e.g., market order with no liquidity)
+            result.status = OrderStatus::Canceled;
+            result.filled_qty = 0;
+            result.remaining_qty = 0;
+            emit_order_event(batch_id, incoming.id, OrderStatus::Canceled, incoming.side, incoming.price, 0, 0);
+        }
         return result;
     }
 
