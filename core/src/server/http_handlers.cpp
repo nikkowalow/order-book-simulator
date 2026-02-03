@@ -195,6 +195,10 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         res.status = 204;
     });
 
+    http.Get("/health", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content("ok", "text/plain");
+    }); 
+
     // POST /order
     http.Post("/order", [&](const httplib::Request &req, httplib::Response &res) {
 

@@ -18,9 +18,9 @@ struct Order
 {
     long long id;
     Side side;
-    OrderType type;
     int price;
     long long qty;
+    OrderType type;
 };
 
 struct Trade
