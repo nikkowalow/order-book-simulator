@@ -4,11 +4,12 @@
 #include <vector>
 #include <mutex>
 
-#include <types/types.hpp> 
+#include <types/types.hpp>
 #include "httplib.hpp"
 
 class OrderBook;
 class MatchingEngine;
+class MarketMaker;
 
 struct OrderRequest {
     Side side;
@@ -29,4 +30,5 @@ std::string json_ok(bool ok);
 std::string json_order_result(const OrderResult& result);
 
 void register_http_routes(httplib::Server& http, OrderBook& book,
-                          MatchingEngine& engine, std::mutex& book_mtx);
+                          MatchingEngine& engine, std::mutex& book_mtx,
+                          MarketMaker* market_maker = nullptr);

@@ -81,8 +81,8 @@ export function BarCell({
             flexDirection: side === "bid" ? "row" : "row-reverse",
             transition: "width 180ms ease",
             ...(side === "bid"
-              ? { left: 0, width: `${pct}%` }
-              : { right: 0, width: `${pct}%` }),
+              ? { right: 0, width: `${pct}%` }
+              : { left: 0, width: `${pct}%` }),
           }}
         >
           {segments.map((segPct, i) => (
@@ -109,8 +109,8 @@ export function BarCell({
             bottom: 0,
             transition: "width 180ms ease",
             ...(side === "bid"
-              ? { left: 0, width: `${pct}%`, background: bidGradient }
-              : { right: 0, width: `${pct}%`, background: askGradient }),
+              ? { right: 0, width: `${pct}%`, background: bidGradient }
+              : { left: 0, width: `${pct}%`, background: askGradient }),
           }}
         />
       )}

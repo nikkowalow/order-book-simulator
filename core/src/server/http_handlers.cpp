@@ -7,6 +7,7 @@
 
 #include <book/order_book.hpp>
 #include <engine/matching_engine.hpp>
+#include <market_maker/market_maker.hpp>
 #include <fstream>
 #include <deque>
 
@@ -183,7 +184,8 @@ std::string json_order_result(const OrderResult& result) {
 static std::atomic<long long> next_order_id{1000};
 
 void register_http_routes(httplib::Server& http, OrderBook& book,
-                          MatchingEngine& engine, std::mutex& book_mtx)
+                          MatchingEngine& engine, std::mutex& book_mtx,
+                          MarketMaker* market_maker)
 {
     // CORS preflight
     http.Options(".*", [](const httplib::Request &, httplib::Response &res) {
@@ -231,7 +233,7 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         bool ok = false;
         {
             std::lock_guard<std::mutex> lk(book_mtx);
-            ok = book.cancel_order(r.id);
+            ok = engine.cancel_order(r.id);
         }
 
         res.set_content(json_ok(ok), "application/json");
@@ -277,5 +279,24 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(serialize_orders_json(book), "application/json");
     });
+
+    // Market maker endpoints
+    if (market_maker) {
+        http.Post("/market_maker/toggle", [market_maker](const httplib::Request&, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+            bool running = market_maker->toggle();
+            std::ostringstream oss;
+            oss << "{\"running\":" << (running ? "true" : "false") << "}";
+            res.set_content(oss.str(), "application/json");
+        });
+
+        http.Get("/market_maker/status", [market_maker](const httplib::Request&, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+            bool running = market_maker->is_running();
+            std::ostringstream oss;
+            oss << "{\"running\":" << (running ? "true" : "false") << "}";
+            res.set_content(oss.str(), "application/json");
+        });
+    }
 }
 
