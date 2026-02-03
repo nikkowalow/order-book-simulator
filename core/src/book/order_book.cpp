@@ -3,293 +3,167 @@
 #include <sstream>
 #include <string>
 
-struct InPlaceRenderer
-{
-    size_t last_lines = 0;
+struct InPlaceRenderer {
+  size_t last_lines = 0;
 
-    static size_t count_lines(const std::string &s)
-    {
-        size_t n = 0;
-        for (char c : s)
-            if (c == '\n')
-                ++n;
-        if (!s.empty() && s.back() != '\n')
-            ++n;
-        return n;
+  static size_t count_lines(const std::string &s) {
+    size_t n = 0;
+    for (char c : s)
+      if (c == '\n')
+        ++n;
+    if (!s.empty() && s.back() != '\n')
+      ++n;
+    return n;
+  }
+
+  // Move cursor up N lines (like repeated \033[F)
+  static void cursor_up_lines(size_t n) {
+    if (n == 0)
+      return;
+    std::cout << "\033[" << n << "F";
+  }
+
+  // Clear N lines starting at current cursor line, then return to start line
+  static void clear_lines(size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+      std::cout << "\033[2K"; // clear entire line
+      if (i + 1 < n)
+        std::cout << "\n"; // go down to clear next line
     }
+    // go back up to where we started
+    if (n > 1)
+      std::cout << "\033[" << (n - 1) << "F";
+  }
 
-    // Move cursor up N lines (like repeated \033[F)
-    static void cursor_up_lines(size_t n)
-    {
-        if (n == 0)
-            return;
-        std::cout << "\033[" << n << "F";
-    }
+  // Render text in-place
+  void draw(const std::string &frame) {
+    // go to start of previous frame
+    cursor_up_lines(last_lines);
 
-    // Clear N lines starting at current cursor line, then return to start line
-    static void clear_lines(size_t n)
-    {
-        for (size_t i = 0; i < n; ++i)
-        {
-            std::cout << "\033[2K"; // clear entire line
-            if (i + 1 < n)
-                std::cout << "\n"; // go down to clear next line
-        }
-        // go back up to where we started
-        if (n > 1)
-            std::cout << "\033[" << (n - 1) << "F";
-    }
+    // clear old frame area
+    clear_lines(last_lines);
 
-    // Render text in-place
-    void draw(const std::string &frame)
-    {
-        // go to start of previous frame
-        cursor_up_lines(last_lines);
+    // print new frame
+    std::cout << frame << std::flush;
 
-        // clear old frame area
-        clear_lines(last_lines);
-
-        // print new frame
-        std::cout << frame << std::flush;
-
-        last_lines = count_lines(frame);
-    }
+    last_lines = count_lines(frame);
+  }
 };
 
-void OrderBook::add_resting_order(const Order &o)
-{
-    if (o.qty <= 0)
-        return;
+void OrderBook::add_resting_order(const Order &o) {
+  if (o.qty <= 0)
+    return;
 
-    // Reject duplicate IDs (simple rule for now)
-    if (index_.find(o.id) != index_.end())
-    {
-        return;
-    }
+  // Reject duplicate IDs (simple rule for now)
+  if (index_.find(o.id) != index_.end()) {
+    return;
+  }
 
-    if (o.side == Side::Buy)
-    {
-        auto &level = bids_[o.price];
-        level.push_back(o);
-        auto it = std::prev(level.end());
+  if (o.side == Side::Buy) {
+    auto &level = bids_[o.price];
+    level.push_back(o);
+    auto it = std::prev(level.end());
 
-        index_[o.id] = Locator{
-            .side = Side::Buy,
-            .price = o.price,
-            .it = it};
-    }
-    else
-    {
-        auto &level = asks_[o.price];
-        level.push_back(o);
-        auto it = std::prev(level.end());
+    index_[o.id] = Locator{.side = Side::Buy, .price = o.price, .it = it};
+  } else {
+    auto &level = asks_[o.price];
+    level.push_back(o);
+    auto it = std::prev(level.end());
 
-        index_[o.id] = Locator{
-            .side = Side::Sell,
-            .price = o.price,
-            .it = it};
-    }
+    index_[o.id] = Locator{.side = Side::Sell, .price = o.price, .it = it};
+  }
 
-    notify_change();
+  notify_change();
 }
 
-bool OrderBook::cancel_order(long long order_id)
-{
-    auto it = index_.find(order_id);
-    if (it == index_.end())
-        return false;
+bool OrderBook::cancel_order(long long order_id) {
+  auto it = index_.find(order_id);
+  if (it == index_.end())
+    return false;
 
-    Locator loc = it->second;
+  Locator loc = it->second;
 
-    if (loc.side == Side::Buy)
-    {
-        auto lvl = bids_.find(loc.price);
-        if (lvl != bids_.end())
-        {
-            lvl->second.erase(loc.it);
-            if (lvl->second.empty())
-            {
-                bids_.erase(lvl);
-            }
-        }
+  if (loc.side == Side::Buy) {
+    auto lvl = bids_.find(loc.price);
+    if (lvl != bids_.end()) {
+      lvl->second.erase(loc.it);
+      if (lvl->second.empty()) {
+        bids_.erase(lvl);
+      }
     }
-    else
-    {
-        auto lvl = asks_.find(loc.price);
-        if (lvl != asks_.end())
-        {
-            lvl->second.erase(loc.it);
-            if (lvl->second.empty())
-            {
-                asks_.erase(lvl);
-            }
-        }
+  } else {
+    auto lvl = asks_.find(loc.price);
+    if (lvl != asks_.end()) {
+      lvl->second.erase(loc.it);
+      if (lvl->second.empty()) {
+        asks_.erase(lvl);
+      }
     }
+  }
 
-    index_.erase(it);
-    notify_change();
-    return true;
+  index_.erase(it);
+  notify_change();
+  return true;
 }
 
-std::optional<int> OrderBook::best_bid() const
-{
-    if (bids_.empty())
-        return std::nullopt;
-    return bids_.begin()->first;
+std::optional<int> OrderBook::best_bid() const {
+  if (bids_.empty())
+    return std::nullopt;
+  return bids_.begin()->first;
 }
 
-std::optional<int> OrderBook::best_ask() const
-{
-    if (asks_.empty())
-        return std::nullopt;
-    return asks_.begin()->first;
+std::optional<int> OrderBook::best_ask() const {
+  if (asks_.empty())
+    return std::nullopt;
+  return asks_.begin()->first;
 }
 
-std::list<Order> *OrderBook::best_bid_queue()
-{
-    if (bids_.empty())
-        return nullptr;
-    return &bids_.begin()->second;
+std::list<Order> *OrderBook::best_bid_queue() {
+  if (bids_.empty())
+    return nullptr;
+  return &bids_.begin()->second;
 }
 
-std::list<Order> *OrderBook::best_ask_queue()
-{
-    if (asks_.empty())
-        return nullptr;
-    return &asks_.begin()->second;
+std::list<Order> *OrderBook::best_ask_queue() {
+  if (asks_.empty())
+    return nullptr;
+  return &asks_.begin()->second;
 }
 
-void OrderBook::cleanup_best_bid_level_if_empty()
-{
-    if (bids_.empty())
-        return;
-    if (bids_.begin()->second.empty())
-    {
-        bids_.erase(bids_.begin());
-    }
+void OrderBook::cleanup_best_bid_level_if_empty() {
+  if (bids_.empty())
+    return;
+  if (bids_.begin()->second.empty()) {
+    bids_.erase(bids_.begin());
+  }
 }
 
-void OrderBook::cleanup_best_ask_level_if_empty()
-{
-    if (asks_.empty())
-        return;
-    if (asks_.begin()->second.empty())
-    {
-        asks_.erase(asks_.begin());
-    }
+void OrderBook::cleanup_best_ask_level_if_empty() {
+  if (asks_.empty())
+    return;
+  if (asks_.begin()->second.empty()) {
+    asks_.erase(asks_.begin());
+  }
 }
 
-#include <tabulate/table.hpp>
-#include <algorithm>
-#include <vector>
-#include <string>
+long long OrderBook::bid_depth() const {
+  long long total = 0;
 
-using namespace tabulate;
+  for (const auto &[price, orders] : bids_) {
+    for (const auto &o : orders)
+      total += o.qty;
+  }
 
-void OrderBook::print_book(std::ostream &os) const
-{
-    struct Level
-    {
-        int price;
-        long long qty;
-    };
-
-    // Aggregate levels
-    std::vector<Level> bid_levels;
-    std::vector<Level> ask_levels;
-
-    // bids_ is assumed to be ordered best->worse already (e.g., std::greater<int>)
-    for (const auto &[price, q] : bids_)
-    {
-        long long total = 0;
-        for (const auto &o : q)
-            total += o.qty;
-        bid_levels.push_back(Level{price, total});
-    }
-
-    // asks_ is assumed to be ordered best->worse already (ascending)
-    for (const auto &[price, q] : asks_)
-    {
-        long long total = 0;
-        for (const auto &o : q)
-            total += o.qty;
-        ask_levels.push_back(Level{price, total});
-    }
-
-    const size_t depth = 10;
-    const size_t rows = std::min(depth, std::max(bid_levels.size(), ask_levels.size()));
-
-    // --- Top header (2 columns) ---
-    Table top;
-    top.add_row({"BIDS", "ASKS"});
-
-    top.format()
-        .width(50)
-        .corner(" ")
-        .border_top(" ")
-        .border_left(" ")
-        .border_right(" ")
-        // .border_bottom("-")
-        .column_separator("|");
-
-    top[0].format().padding_top(1).padding_bottom(1).font_align(FontAlign::center).font_style({FontStyle::underline}).font_background_color(Color::green);
-
-    top[0][1].format().font_background_color(Color::red).font_color(Color::white);
-
-    // --- Book header (4 columns) ---
-    Table book;
-    book.add_row({"Size", "Bid", "Ask", "Size"});
-
-    book.format()
-        .font_style({FontStyle::bold})
-        .border_top("-")
-        .border_bottom("-")
-        .border_left("|")
-        .border_right("|")
-        .corner("+");
-
-    // Your chosen fixed widths (note: 24x4 is very wide; keep if you like it)
-    book.column(0).format().width(24).font_align(FontAlign::right);
-    book.column(1).format().width(24).font_align(FontAlign::right);
-    book.column(2).format().width(24).font_align(FontAlign::right);
-    book.column(3).format().width(24).font_align(FontAlign::right);
-
-    // Center the header labels
-    for (auto &cell : book[0])
-    {
-        cell.format()
-            .font_style({FontStyle::bold})
-            .font_align(FontAlign::center);
-    }
-
-    // --- Populate from real book data ---
-    for (size_t i = 0; i < rows; ++i)
-    {
-        std::string bid_size, bid_px, ask_px, ask_size;
-
-        if (i < bid_levels.size())
-        {
-            bid_size = std::to_string(bid_levels[i].qty);
-            bid_px = std::to_string(bid_levels[i].price);
-        }
-
-        if (i < ask_levels.size())
-        {
-            ask_px = std::to_string(ask_levels[i].price);
-            ask_size = std::to_string(ask_levels[i].qty);
-        }
-
-        book.add_row({bid_size, bid_px, ask_px, ask_size});
-    }
-
-    os << "\n"
-       << top << "\n"
-       << book << "\n";
+  return total;
 }
 
-static std::string render_book_frame(const OrderBook &book)
-{
-    std::ostringstream oss;
-    book.print_book(oss);
-    return oss.str();
+long long OrderBook::ask_depth() const {
+  long long total = 0;
+
+  for (const auto &[price, orders] : asks_) {
+    for (const auto &o : orders)
+      total += o.qty;
+  }
+
+  return total;
 }

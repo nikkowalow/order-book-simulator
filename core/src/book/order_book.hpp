@@ -1,57 +1,59 @@
 #pragma once
 
-#include <map>
-#include <list>
-#include <unordered_map>
-#include <optional>
 #include <functional>
+#include <list>
+#include <map>
+#include <optional>
 #include <ostream>
+#include <unordered_map>
 
 #include "types/types.hpp"
 
-class OrderBook
-{
+class OrderBook {
 public:
-    void add_resting_order(const Order &o);
+  void add_resting_order(const Order &o);
 
-    bool cancel_order(long long order_id);
+  bool cancel_order(long long order_id);
 
-    std::optional<int> best_bid() const;
-    std::optional<int> best_ask() const;
+  std::optional<int> best_bid() const;
+  std::optional<int> best_ask() const;
 
-    std::list<Order> *best_bid_queue();
-    std::list<Order> *best_ask_queue();
+  std::list<Order> *best_bid_queue();
+  std::list<Order> *best_ask_queue();
 
-    void cleanup_best_bid_level_if_empty();
-    void cleanup_best_ask_level_if_empty();
+  void cleanup_best_bid_level_if_empty();
+  void cleanup_best_ask_level_if_empty();
 
-    void print_book(std::ostream &os) const;
+  const auto &bids() const { return bids_; }
+  const auto &asks() const { return asks_; }
 
-    const auto &bids() const { return bids_; }
-    const auto &asks() const { return asks_; }
+  long long bid_depth() const;
+  long long ask_depth() const;
 
-    using ChangeCallback = std::function<void()>;
-    void set_on_change(ChangeCallback cb) { on_change_ = std::move(cb); }
-    void notify_change() { if (on_change_) on_change_(); }
+  using ChangeCallback = std::function<void()>;
+  void set_on_change(ChangeCallback cb) { on_change_ = std::move(cb); }
+  void notify_change() {
+    if (on_change_)
+      on_change_();
+  }
 
 private:
-    ChangeCallback on_change_;
+  ChangeCallback on_change_;
 
-    using OrderList = std::list<Order>;
+  using OrderList = std::list<Order>;
 
-    struct Locator
-    {
-        Side side;
-        int price;
-        OrderList::iterator it;
-    };
+  struct Locator {
+    Side side;
+    int price;
+    OrderList::iterator it;
+  };
 
-    // bids: high -> low
-    std::map<int, OrderList, std::greater<int>> bids_;
+  // bids: high -> low
+  std::map<int, OrderList, std::greater<int>> bids_;
 
-    // asks: low -> high
-    std::map<int, OrderList> asks_;
+  // asks: low -> high
+  std::map<int, OrderList> asks_;
 
-    // order_id -> where it lives
-    std::unordered_map<long long, Locator> index_;
+  // order_id -> where it lives
+  std::unordered_map<long long, Locator> index_;
 };
