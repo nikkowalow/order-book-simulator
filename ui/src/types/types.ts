@@ -44,3 +44,10 @@ export interface OrderEvent {
   remaining_qty: number;
   ts: number;
 }
+
+export interface RestingOrder {
+  id: number;
+  side: Side;
+  price: number;
+  qty: number;
+}

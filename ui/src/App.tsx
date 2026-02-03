@@ -2,6 +2,7 @@ import OrderBookTable from "./components/OrderBookTable";
 import DepthChart from "./components/DepthChart";
 import TradeHistory from "./components/TradeHistory";
 import OrderEntry from "./components/OrderEntry";
+import RestingOrders from "./components/RestingOrders";
 
 export default function App() {
   return (
@@ -42,23 +43,8 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        <div
-          style={{ gridColumn: "1", gridRow: "1 / 3", overflow: "auto" }}
-          className="panel"
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              color: "rgba(255,255,255,0.3)",
-              fontSize: 18,
-              fontWeight: 600,
-            }}
-          >
-            Analytics (TODO)
-          </div>
+        <div style={{ gridColumn: "1", gridRow: "1 / 3", overflow: "auto" }}>
+          <RestingOrders />
         </div>
 
         <div style={{ overflow: "auto" }}>
