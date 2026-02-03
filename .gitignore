@@ -49,3 +49,4 @@ ui/node_modules/
 
 notes.txt
 .vercel
+.env
