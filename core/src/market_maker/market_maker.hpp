@@ -1,38 +1,50 @@
 #pragma once
 
 #include <atomic>
-#include <thread>
 #include <mutex>
-#include <optional>
+#include <thread>
 
-#include <book/order_book.hpp>
-#include <engine/matching_engine.hpp>
+#include "book/order_book.hpp"
+#include "engine/matching_engine.hpp"
 
 class MarketMaker {
 public:
-    MarketMaker(OrderBook &book, MatchingEngine &engine, std::mutex &mtx);
-    ~MarketMaker();
+  MarketMaker(OrderBook &book, MatchingEngine &engine, std::mutex &mtx);
+  ~MarketMaker();
 
-    void start();
-    void stop();
+  void start();
+  void stop();
+  bool toggle(); // returns new running state
+  bool is_running() const;
 
 private:
-    void run();
+  void run_maker();
+  void run_taker();
 
-    OrderBook &book_;
-    MatchingEngine &engine_;
-    std::mutex &mtx_;
+  OrderBook &book_;
+  MatchingEngine &engine_;
+  std::mutex &mtx_;
 
-    std::atomic<bool> running_{false};
-    std::thread thread_;
+  std::atomic<bool> running_{false};
 
-    long long bid_id_{0};
-    long long ask_id_{0};
+  std::thread maker_thread_;
+  std::thread taker_thread_;
 
-    int bid_px_{0};
-    int ask_px_{0};
+  // maker state
+  long long bid_id_{0};
+  long long ask_id_{0};
+  int bid_px_{0};
+  int ask_px_{0};
 
-    int spread_{2};        // total spread in ticks
-    int qty_{50};          // quote size
-    int interval_ms_{200}; // update interval
+  // params (tune freely)
+  int spread_{2};
+  int maker_qty_{50};
+  int taker_qty_{20};
+
+  int maker_interval_ms_{5};
+  int taker_interval_ms_{50};
+
+  int target_depth_{2000};
+  int min_depth_{1000};
+  int max_depth_{4000};
 };
