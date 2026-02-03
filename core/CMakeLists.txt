@@ -1,3 +1,5 @@
+option(BUILD_TESTS "Build tests" OFF)
+
 cmake_minimum_required(VERSION 3.10)
 
 project(OrderBookSimulator LANGUAGES CXX)
@@ -19,8 +21,8 @@ add_library(core
 
 target_include_directories(core
     PUBLIC
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/external/tabulate/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/external/tabulate/include
 )
 
 # ------------------------
@@ -76,13 +78,15 @@ target_link_libraries(ws_server PRIVATE Boost::boost)
 # ------------------------
 # Tests
 # ------------------------
-find_package(Catch2 3 REQUIRED)
+if(BUILD_TESTS)
+    find_package(Catch2 3 REQUIRED)
 
-add_executable(tests
-    tests/test_main.cpp
-    # tests/test_matching_engine.cpp
-    # tests/test_order_book.cpp
-)
+    add_executable(tests
+        tests/test_main.cpp
 
+        # tests/test_matching_engine.cpp
+        # tests/test_order_book.cpp
+    )
 
-target_link_libraries(tests PRIVATE core Catch2::Catch2WithMain)
+    target_link_libraries(tests PRIVATE core Catch2::Catch2WithMain)
+endif()
