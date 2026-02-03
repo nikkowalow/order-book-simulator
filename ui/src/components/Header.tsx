@@ -1,3 +1,4 @@
+import logo from "../assets/osmium.png";
 // import { useEffect, useState } from "react";
 // import { SERVER_URL } from "../config/config";
 
@@ -71,8 +72,15 @@ export default function Header() {
         height: "100%",
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: 0.5 }}>
-        Order Book Simulator
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <img
+          src={logo}
+          alt="Logo"
+          style={{ height: 28, width: 28 }}
+        />
+        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: 0.5 }}>
+          Order Book Simulator
+        </span>
       </div>
 
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
