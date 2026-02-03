@@ -1,57 +1,76 @@
 #include <sim/seed_book.hpp>
 #include <types/types.hpp>
 
-void seed_book(OrderBook &book)
-{
-    // BIDS
-    book.add_resting_order(Order{.id = 101, .side = Side::Buy, .price = 99, .qty = 120});
-    book.add_resting_order(Order{.id = 102, .side = Side::Buy, .price = 99, .qty = 80});
-    book.add_resting_order(Order{.id = 103, .side = Side::Buy, .price = 99, .qty = 55});
+#include <algorithm>
+#include <numeric>
+#include <random>
+#include <vector>
 
-    book.add_resting_order(Order{.id = 104, .side = Side::Buy, .price = 98, .qty = 140});
-    book.add_resting_order(Order{.id = 105, .side = Side::Buy, .price = 98, .qty = 65});
+void seed_book(OrderBook &book, int mid_price, int spread, int levels,
+               int target_depth_per_side, uint64_t rng_seed) {
 
-    book.add_resting_order(Order{.id = 106, .side = Side::Buy, .price = 97, .qty = 200});
-    book.add_resting_order(Order{.id = 107, .side = Side::Buy, .price = 97, .qty = 90});
+  std::mt19937_64 rng(rng_seed == 0 ? std::random_device{}() : rng_seed);
 
-    book.add_resting_order(Order{.id = 108, .side = Side::Buy, .price = 96, .qty = 160});
-    book.add_resting_order(Order{.id = 109, .side = Side::Buy, .price = 96, .qty = 75});
+  long long next_id = 1;
 
-    book.add_resting_order(Order{.id = 110, .side = Side::Buy, .price = 95, .qty = 240});
-    book.add_resting_order(Order{.id = 111, .side = Side::Buy, .price = 95, .qty = 110});
+  int best_bid = mid_price - spread / 2;
+  int best_ask = mid_price + spread / 2;
 
-    book.add_resting_order(Order{.id = 112, .side = Side::Buy, .price = 94, .qty = 300});
-    book.add_resting_order(Order{.id = 113, .side = Side::Buy, .price = 94, .qty = 150});
+  // --- Random generators ---
+  std::uniform_int_distribution<int> order_count_dist(1, 6);
+  std::uniform_int_distribution<int> price_jitter_dist(0, 1);
+  std::uniform_int_distribution<int> fat_tail_dist(1, 100);
+  std::uniform_real_distribution<double> skew_dist(0.7, 1.3);
 
-    book.add_resting_order(Order{.id = 114, .side = Side::Buy, .price = 93, .qty = 180});
-    book.add_resting_order(Order{.id = 115, .side = Side::Buy, .price = 93, .qty = 95});
+  auto seed_side = [&](Side side, int start_price, int dir) {
+    // Random weights per level
+    std::vector<long long> weights(levels);
+    for (int i = 0; i < levels; ++i) {
+      // heavy-tailed-ish randomness
+      long long w = fat_tail_dist(rng);
+      if (fat_tail_dist(rng) > 85)
+        w *= 3; // occasional chunky level
+      weights[i] = w;
+    }
 
-    book.add_resting_order(Order{.id = 116, .side = Side::Buy, .price = 92, .qty = 220});
-    book.add_resting_order(Order{.id = 117, .side = Side::Buy, .price = 92, .qty = 60});
+    long long weight_sum = std::accumulate(weights.begin(), weights.end(), 0LL);
 
-    // ASKS
-    book.add_resting_order(Order{.id = 201, .side = Side::Sell, .price = 101, .qty = 70});
-    book.add_resting_order(Order{.id = 202, .side = Side::Sell, .price = 101, .qty = 40});
-    book.add_resting_order(Order{.id = 203, .side = Side::Sell, .price = 101, .qty = 25});
+    for (int i = 0; i < levels; ++i) {
+      int base_price = start_price + dir * i;
 
-    book.add_resting_order(Order{.id = 204, .side = Side::Sell, .price = 102, .qty = 90});
-    book.add_resting_order(Order{.id = 205, .side = Side::Sell, .price = 102, .qty = 55});
+      // small price clustering / gaps
+      int price = base_price + price_jitter_dist(rng);
 
-    book.add_resting_order(Order{.id = 206, .side = Side::Sell, .price = 103, .qty = 130});
-    book.add_resting_order(Order{.id = 207, .side = Side::Sell, .price = 103, .qty = 60});
+      long long level_qty = (target_depth_per_side * weights[i]) / weight_sum;
 
-    book.add_resting_order(Order{.id = 208, .side = Side::Sell, .price = 104, .qty = 150});
-    book.add_resting_order(Order{.id = 209, .side = Side::Sell, .price = 104, .qty = 80});
+      if (level_qty <= 0)
+        continue;
 
-    book.add_resting_order(Order{.id = 210, .side = Side::Sell, .price = 105, .qty = 220});
-    book.add_resting_order(Order{.id = 211, .side = Side::Sell, .price = 105, .qty = 100});
+      int orders = order_count_dist(rng);
+      long long remaining = level_qty;
 
-    book.add_resting_order(Order{.id = 212, .side = Side::Sell, .price = 106, .qty = 260});
-    book.add_resting_order(Order{.id = 213, .side = Side::Sell, .price = 106, .qty = 140});
+      for (int j = 0; j < orders; ++j) {
+        if (remaining <= 0)
+          break;
 
-    book.add_resting_order(Order{.id = 214, .side = Side::Sell, .price = 107, .qty = 190});
-    book.add_resting_order(Order{.id = 215, .side = Side::Sell, .price = 107, .qty = 75});
+        // uneven split
+        long long slice =
+            (j == orders - 1)
+                ? remaining
+                : std::max<long long>(1, remaining * skew_dist(rng) /
+                                             (orders - j));
 
-    book.add_resting_order(Order{.id = 216, .side = Side::Sell, .price = 108, .qty = 210});
-    book.add_resting_order(Order{.id = 217, .side = Side::Sell, .price = 108, .qty = 90});
+        remaining -= slice;
+
+        book.add_resting_order(
+            Order{.id = next_id++, .side = side, .price = price, .qty = slice});
+      }
+    }
+  };
+
+  // BIDS: downwards
+  seed_side(Side::Buy, best_bid, -1);
+
+  // ASKS: upwards
+  seed_side(Side::Sell, best_ask, +1);
 }
