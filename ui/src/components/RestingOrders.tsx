@@ -1,7 +1,6 @@
+import { SERVER_URL } from "../config/config";
 import { useOrders } from "../hooks/useOrders";
 import { Side } from "../types/types";
-
-const HTTP_URL = "http://localhost:8080";
 
 function fmt(n: number, decimals = 0) {
   return n.toLocaleString(undefined, {
@@ -17,7 +16,7 @@ function getSideStyle(side: Side): React.CSSProperties {
 }
 
 async function cancelOrder(id: number) {
-  await fetch(`${HTTP_URL}/cancel`, {
+  await fetch(`${SERVER_URL}/cancel`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),

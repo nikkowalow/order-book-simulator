@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-
-const HTTP_URL = "http://localhost:8080";
+import { SERVER_URL } from "../config/config";
 
 function ToggleSwitch({
   checked,
@@ -43,7 +42,7 @@ export default function Header() {
   const [mmRunning, setMmRunning] = useState<boolean>(true);
 
   useEffect(() => {
-    fetch(`${HTTP_URL}/market_maker/status`)
+    fetch(`${SERVER_URL}/market_maker/status`)
       .then((res) => res.json())
       .then((data) => setMmRunning(data.running))
       .catch(() => setMmRunning(false));
@@ -51,7 +50,7 @@ export default function Header() {
 
   const toggleMarketMaker = async () => {
     try {
-      const res = await fetch(`${HTTP_URL}/market_maker/toggle`, {
+      const res = await fetch(`${SERVER_URL}/market_maker/toggle`, {
         method: "POST",
       });
       const data = await res.json();
@@ -78,7 +77,7 @@ export default function Header() {
 
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
         {/* Market Maker Toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
             Market Maker
           </span>
@@ -100,7 +99,7 @@ export default function Header() {
             height: 20,
             background: "rgba(255,255,255,0.1)",
           }}
-        />
+        /> */}
 
         <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
           Guest

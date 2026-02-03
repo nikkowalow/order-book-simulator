@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { OrderEvent } from "../types/types";
+import { SERVER_URL } from "../config/config";
 
 export function useActivity(limit = 100) {
   const [events, setEvents] = useState<OrderEvent[] | null>(null);
@@ -10,7 +11,7 @@ export function useActivity(limit = 100) {
 
     const fetchActivity = async () => {
       try {
-        const res = await fetch(`http://localhost:8080/activity?limit=${limit}`, {
+        const res = await fetch(`${SERVER_URL}/activity?limit=${limit}`, {
           cache: "no-store",
         });
 

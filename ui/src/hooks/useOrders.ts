@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RestingOrder } from "../types/types";
+import { SERVER_URL } from "../config/config";
 
 const WS_URL = "ws://localhost:9001";
 const HTTP_URL = "http://localhost:8080";
@@ -10,7 +11,7 @@ export function useOrders() {
   const wsRef = useRef<WebSocket | null>(null);
 
   const fetchOrders = () => {
-    fetch(`${HTTP_URL}/orders`, { cache: "no-store" })
+    fetch(`${SERVER_URL}/orders`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data: RestingOrder[]) => {
         setOrders(data);

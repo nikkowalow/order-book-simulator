@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SERVER_URL } from "../config/config";
 
 export default function OrderEntry() {
   const [price, setPrice] = useState("");
@@ -34,7 +35,7 @@ export default function OrderEntry() {
 
     const t0 = performance.now();
     try {
-      const res = await fetch("http://localhost:8080/order", {
+      const res = await fetch(`${SERVER_URL}/order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -72,7 +73,7 @@ export default function OrderEntry() {
 
     const t0 = performance.now();
     try {
-      const res = await fetch("http://localhost:8080/cancel", {
+      const res = await fetch(`${SERVER_URL}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

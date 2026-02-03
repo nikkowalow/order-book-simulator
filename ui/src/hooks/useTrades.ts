@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trade } from "../types/types";
+import { SERVER_URL } from "../config/config";
 
 export function useTrades(limit = 100) {
   const [trades, setTrades] = useState<Trade[] | null>(null);
@@ -10,7 +11,7 @@ export function useTrades(limit = 100) {
 
     const fetchTrades = async () => {
       try {
-        const res = await fetch(`http://localhost:8080/trades?limit=${limit}`, {
+        const res = await fetch(`${SERVER_URL}/trades?limit=${limit}`, {
           cache: "no-store",
         });
 

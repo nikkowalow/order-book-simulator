@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Book } from "../types/types";
-
-const WS_URL = "ws://localhost:9001";
+import { SERVER_URL, WS_URL } from "../config/config";
 
 export function useBook() {
   const [book, setBook] = useState<Book | null>(null);
@@ -12,7 +11,7 @@ export function useBook() {
     let reconnectTimer: ReturnType<typeof setTimeout>;
 
     // Initial fetch
-    fetch("http://localhost:8080/book", { cache: "no-store" })
+    fetch(`${SERVER_URL}/book`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data: Book) => setBook(data))
       .catch((e) => setErr(e?.message ?? "Failed to fetch /book"));
