@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { SERVER_URL } from "../config/config";
+// import { useEffect, useState } from "react";
+// import { SERVER_URL } from "../config/config";
 
 // function ToggleSwitch({
 //   checked,
