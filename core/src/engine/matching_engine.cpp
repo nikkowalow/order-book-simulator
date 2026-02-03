@@ -242,3 +242,14 @@ void MatchingEngine::match_sell(Order &taker, std::vector<Trade> &trades, long l
 long long MatchingEngine::next_order_id() {
     return next_id_.fetch_add(1, std::memory_order_relaxed);
 }
+
+bool MatchingEngine::cancel_order(long long order_id) {
+    bool ok = book_.cancel_order(order_id);
+    if (ok) {
+        long long batch_id = batch_seq_.fetch_add(1, std::memory_order_relaxed);
+        // Emit cancelled event (price/qty unknown for cancelled resting order, use 0)
+        emit_order_event(batch_id, order_id, OrderStatus::Canceled, Side::Buy, 0, 0, 0);
+        book_.notify_change();
+    }
+    return ok;
+}

@@ -34,6 +34,8 @@ public:
 
     OrderResult process_order(const Order &incoming);
 
+    bool cancel_order(long long order_id);
+
 private:
     OrderBook &book_;
     TradeSink* trade_sink_;
