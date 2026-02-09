@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { SERVER_URL } from "../config/config";
+import { useUser } from "../context/UserContext";
 
 export default function OrderEntry() {
+  const { userId } = useUser();
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
   const [orderType, setOrderType] = useState<"LIMIT" | "MARKET">("LIMIT");
@@ -31,6 +33,9 @@ export default function OrderEntry() {
     const body: Record<string, unknown> = { side, qty: q, type: orderType };
     if (orderType === "LIMIT") {
       body.price = parseInt(price, 10);
+    }
+    if (userId) {
+      body.user_id = userId;
     }
 
     const t0 = performance.now();
@@ -76,7 +81,7 @@ export default function OrderEntry() {
       const res = await fetch(`${SERVER_URL}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, user_id: userId }),
       });
 
       const t1 = performance.now();

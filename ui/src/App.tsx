@@ -4,9 +4,11 @@ import TradeHistory from "./components/TradeHistory";
 import OrderEntry from "./components/OrderEntry";
 import RestingOrders from "./components/RestingOrders";
 import Header from "./components/Header";
+import { UserProvider } from "./context/UserContext";
 
 export default function App() {
   return (
+    <UserProvider>
     <div
       style={{
         display: "grid",
@@ -58,5 +60,6 @@ export default function App() {
         </div>
       </div>
     </div>
+    </UserProvider>
   );
 }

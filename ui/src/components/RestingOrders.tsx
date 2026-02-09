@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { SERVER_URL } from "../config/config";
 import { useOrders } from "../hooks/useOrders";
+import { useUser } from "../context/UserContext";
 import { Side } from "../types/types";
 
 function fmt(n: number, decimals = 0) {
@@ -15,16 +17,18 @@ function getSideStyle(side: Side): React.CSSProperties {
     : { color: "rgb(239, 68, 68)" }; // red
 }
 
-async function cancelOrder(id: number) {
+async function cancelOrder(id: number, userId: number | null) {
   await fetch(`${SERVER_URL}/cancel`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id }),
+    body: JSON.stringify({ id, user_id: userId }),
   });
 }
 
 export default function RestingOrders() {
   const { orders, err } = useOrders();
+  const { userId } = useUser();
+  const [showMine, setShowMine] = useState(false);
 
   if (err) {
     return (
@@ -36,8 +40,12 @@ export default function RestingOrders() {
 
   if (!orders) return <div style={{ maxWidth: 900 }}>Loading...</div>;
 
-  const bids = orders.filter((o) => o.side === "bid");
-  const asks = orders.filter((o) => o.side === "ask");
+  const filtered = showMine
+    ? orders.filter((o) => o.user_id === userId)
+    : orders;
+
+  const bids = filtered.filter((o) => o.side === "bid");
+  const asks = filtered.filter((o) => o.side === "ask");
 
   return (
     <div
@@ -57,9 +65,47 @@ export default function RestingOrders() {
           letterSpacing: 0.3,
           borderBottom: "1px solid rgba(255,255,255,0.08)",
           background: "rgba(255,255,255,0.03)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        Resting Orders
+        <span>Resting Orders</span>
+        <div
+          style={{
+            display: "flex",
+            borderRadius: 4,
+            overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          {(["All", "Mine"] as const).map((label) => {
+            const active =
+              (label === "Mine" && showMine) ||
+              (label === "All" && !showMine);
+            return (
+              <button
+                key={label}
+                onClick={() => setShowMine(label === "Mine")}
+                style={{
+                  background: active
+                    ? "rgba(255,255,255,0.15)"
+                    : "transparent",
+                  color: active
+                    ? "rgba(255,255,255,0.9)"
+                    : "rgba(255,255,255,0.4)",
+                  border: "none",
+                  padding: "3px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Column labels */}
@@ -82,7 +128,7 @@ export default function RestingOrders() {
 
       {/* Rows */}
       <div>
-        {orders.length === 0 && (
+        {filtered.length === 0 && (
           <div
             style={{
               padding: "20px 12px",
@@ -90,10 +136,10 @@ export default function RestingOrders() {
               color: "rgba(255,255,255,0.3)",
             }}
           >
-            No resting orders
+            {showMine ? "No orders for your session" : "No resting orders"}
           </div>
         )}
-        {orders.map((o) => (
+        {filtered.map((o) => (
           <div
             key={o.id}
             style={{
@@ -138,7 +184,7 @@ export default function RestingOrders() {
             </span>
 
             <button
-              onClick={() => cancelOrder(o.id)}
+              onClick={() => cancelOrder(o.id, userId)}
               style={{
                 background: "transparent",
                 border: "1px solid rgba(239, 68, 68, 0.5)",
