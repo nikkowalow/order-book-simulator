@@ -19,6 +19,8 @@ void JournalTradeSink::on_trade(const Trade& t)
         << "\"qty\":" << t.qty << ","
         << "\"maker\":" << t.maker_id << ","
         << "\"taker\":" << t.taker_id << ","
+        << "\"maker_user\":" << t.maker_user_id << ","
+        << "\"taker_user\":" << t.taker_user_id << ","
         << "\"ts\":" << t.timestamp.count()
         << "}\n";
 

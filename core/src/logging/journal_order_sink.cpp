@@ -34,6 +34,7 @@ void JournalOrderSink::on_order_event(const OrderEvent& e)
         << "\"seq\":" << e.seq << ","
         << "\"batch_id\":" << e.batch_id << ","
         << "\"order_id\":" << e.order_id << ","
+        << "\"user_id\":" << e.user_id << ","
         << "\"type\":\"" << event_type_str(e.status) << "\","
         << "\"side\":\"" << side_str(e.side) << "\","
         << "\"price\":" << e.price << ","

@@ -61,6 +61,7 @@ std::string serialize_orders_json(const OrderBook& book)
         for (const auto& o : q) {
             if (!first) oss << ",";
             oss << "{\"id\":" << o.id
+                << ",\"user_id\":" << o.user_id
                 << ",\"side\":\"bid\""
                 << ",\"price\":" << price
                 << ",\"qty\":" << o.qty << "}";
@@ -73,6 +74,7 @@ std::string serialize_orders_json(const OrderBook& book)
         for (const auto& o : q) {
             if (!first) oss << ",";
             oss << "{\"id\":" << o.id
+                << ",\"user_id\":" << o.user_id
                 << ",\"side\":\"ask\""
                 << ",\"price\":" << price
                 << ",\"qty\":" << o.qty << "}";

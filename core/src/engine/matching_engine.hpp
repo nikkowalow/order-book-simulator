@@ -8,6 +8,8 @@
 #include "trade_sink.hpp"
 #include "order_sink.hpp"
 
+class UserManager;
+
 enum class PreflightStatus {
     Ok,
     Rejected,
@@ -28,7 +30,7 @@ struct PreflightResult {
 class MatchingEngine
 {
 public:
-    explicit MatchingEngine(OrderBook &book, TradeSink* trade_sink = nullptr, OrderSink* order_sink = nullptr);
+    explicit MatchingEngine(OrderBook &book, TradeSink* trade_sink = nullptr, OrderSink* order_sink = nullptr, UserManager* user_manager = nullptr);
 
     long long next_order_id();
 
@@ -40,6 +42,7 @@ private:
     OrderBook &book_;
     TradeSink* trade_sink_;
     OrderSink* order_sink_;
+    UserManager* user_manager_;
     std::atomic<long long> next_id_{1000};
     std::atomic<long long> event_seq_{1};
     std::atomic<long long> batch_seq_{1};
@@ -47,5 +50,5 @@ private:
     PreflightResult preflight_check(const Order &order);
     void match_buy(Order &taker, std::vector<Trade> &trades, long long batch_id);
     void match_sell(Order &taker, std::vector<Trade> &trades, long long batch_id);
-    void emit_order_event(long long batch_id, long long order_id, OrderStatus status, Side side, int price, long long qty, long long remaining);
+    void emit_order_event(long long batch_id, long long order_id, long long user_id, OrderStatus status, Side side, int price, long long qty, long long remaining);
 };

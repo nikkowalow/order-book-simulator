@@ -19,6 +19,7 @@
 #include <server/http_handlers.hpp>
 #include <server/ws_trade_sink.hpp>
 #include <sim/seed_book.hpp>
+#include <user/user_manager.hpp>
 
 static bool send_all(int fd, const std::string &msg) {
   const char *data = msg.c_str();
@@ -50,14 +51,16 @@ int main(int argc, char **argv) {
   multi_sink.add_sink(&journal_trade_sink);
   multi_sink.add_sink(&ws_sink);
 
-  MatchingEngine engine(book, &multi_sink, &journal_order_sink);
+  UserManager user_manager("users.jsonl");
+
+  MatchingEngine engine(book, &multi_sink, &journal_order_sink, &user_manager);
   std::mutex book_mtx;
 
   MarketMaker mm(book, engine, book_mtx);
   //   mm.start();
 
   httplib::Server http;
-  register_http_routes(http, book, engine, book_mtx, &mm);
+  register_http_routes(http, book, engine, book_mtx, &mm, &user_manager);
 
   std::thread http_thread([&]() { http.listen("0.0.0.0", 8080); });
   http_thread.detach();

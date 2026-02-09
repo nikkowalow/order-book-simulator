@@ -8,6 +8,7 @@
 #include <book/order_book.hpp>
 #include <engine/matching_engine.hpp>
 #include <market_maker/market_maker.hpp>
+#include <user/user_manager.hpp>
 #include <fstream>
 #include <deque>
 
@@ -185,7 +186,8 @@ static std::atomic<long long> next_order_id{1000};
 
 void register_http_routes(httplib::Server& http, OrderBook& book,
                           MatchingEngine& engine, std::mutex& book_mtx,
-                          MarketMaker* market_maker)
+                          MarketMaker* market_maker,
+                          UserManager* user_manager)
 {
     // CORS preflight
     http.Options(".*", [](const httplib::Request &, httplib::Response &res) {
@@ -211,8 +213,11 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
             return;
         }
 
+        long long uid = 0;
+        extract_int_field(req.body, "user_id", uid);
+
         long long id = engine.next_order_id();
-        Order o{.id = id, .side = r.side, .price = r.price, .qty = r.qty, .type = r.type};
+        Order o{.id = id, .user_id = uid, .side = r.side, .price = r.price, .qty = r.qty, .type = r.type};
 
         OrderResult result;
         {
@@ -224,7 +229,7 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
     });
 
     // POST /cancel
-    http.Post("/cancel", [&](const httplib::Request &req, httplib::Response &res) {
+    http.Post("/cancel", [&engine, &book_mtx, user_manager](const httplib::Request &req, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
 
         CancelRequest r;
@@ -232,6 +237,22 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
             res.status = 400;
             res.set_content(json_error("Invalid id"), "application/json");
             return;
+        }
+
+        long long uid = 0;
+        extract_int_field(req.body, "user_id", uid);
+
+        std::cout << "Cancel request for order " << r.id << " from user " << uid << std::endl;
+
+        if (uid > 0 && user_manager) {
+            std::cout << "Verifying ownership for order " << r.id << std::endl;
+            long long owner = user_manager->get_user_for_order(r.id);
+            std::cout << "Order " << r.id << " is owned by user " << owner << std::endl;
+            if (owner != uid) {
+                res.status = 403;
+                res.set_content(json_error("Not your order"), "application/json");
+                return;
+            }
         }
 
         bool ok = false;
@@ -283,6 +304,155 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(serialize_orders_json(book), "application/json");
     });
+
+    // User endpoints
+    if (user_manager) {
+        http.Post("/user/connect", [user_manager](const httplib::Request&, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+            long long uid = user_manager->next_user_id();
+            std::ostringstream oss;
+            oss << "{\"userId\":" << uid << "}";
+            res.set_content(oss.str(), "application/json");
+        });
+
+        http.Get("/user/position", [user_manager](const httplib::Request& req, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+
+            if (!req.has_param("user_id")) {
+                res.status = 400;
+                res.set_content(json_error("Missing user_id param"), "application/json");
+                return;
+            }
+
+            long long uid = std::stoll(req.get_param_value("user_id"));
+            Position pos = user_manager->get_position(uid);
+
+            std::ostringstream oss;
+            oss << "{\"userId\":" << uid
+                << ",\"netQty\":" << pos.net_qty
+                << ",\"totalBuyQty\":" << pos.total_buy_qty
+                << ",\"totalSellQty\":" << pos.total_sell_qty
+                << ",\"totalBuyValue\":" << pos.total_buy_value
+                << ",\"totalSellValue\":" << pos.total_sell_value
+                << "}";
+            res.set_content(oss.str(), "application/json");
+        });
+
+        http.Get("/user/orders", [user_manager, &book, &book_mtx](const httplib::Request& req, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+
+            if (!req.has_param("user_id")) {
+                res.status = 400;
+                res.set_content(json_error("Missing user_id param"), "application/json");
+                return;
+            }
+
+            long long uid = std::stoll(req.get_param_value("user_id"));
+
+            std::lock_guard<std::mutex> lk(book_mtx);
+            std::ostringstream oss;
+            oss << "[";
+            bool first = true;
+
+            for (const auto& [price, q] : book.bids()) {
+                for (const auto& o : q) {
+                    if (o.user_id != uid) continue;
+                    if (!first) oss << ",";
+                    oss << "{\"id\":" << o.id
+                        << ",\"user_id\":" << o.user_id
+                        << ",\"side\":\"bid\""
+                        << ",\"price\":" << price
+                        << ",\"qty\":" << o.qty << "}";
+                    first = false;
+                }
+            }
+
+            for (const auto& [price, q] : book.asks()) {
+                for (const auto& o : q) {
+                    if (o.user_id != uid) continue;
+                    if (!first) oss << ",";
+                    oss << "{\"id\":" << o.id
+                        << ",\"user_id\":" << o.user_id
+                        << ",\"side\":\"ask\""
+                        << ",\"price\":" << price
+                        << ",\"qty\":" << o.qty << "}";
+                    first = false;
+                }
+            }
+
+            oss << "]";
+            res.set_content(oss.str(), "application/json");
+        });
+
+        http.Get("/user/trades", [user_manager](const httplib::Request& req, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+
+            if (!req.has_param("user_id")) {
+                res.status = 400;
+                res.set_content(json_error("Missing user_id param"), "application/json");
+                return;
+            }
+
+            long long uid = std::stoll(req.get_param_value("user_id"));
+            std::string uid_str = std::to_string(uid);
+
+            size_t limit = 100;
+            if (req.has_param("limit")) {
+                limit = std::stoul(req.get_param_value("limit"));
+                if (limit == 0) limit = 100;
+                if (limit > 1000) limit = 1000;
+            }
+
+            // Read trades.jsonl and filter by user
+            std::ifstream file("trades.jsonl");
+            std::string line;
+            std::deque<std::string> buffer;
+
+            while (std::getline(file, line)) {
+                if (line.empty()) continue;
+                // Check if this trade involves the user (maker_user or taker_user)
+                bool match = false;
+                std::string mk = "\"maker_user\":" + uid_str;
+                std::string tk = "\"taker_user\":" + uid_str;
+                if (line.find(mk) != std::string::npos || line.find(tk) != std::string::npos) {
+                    match = true;
+                }
+                if (!match) continue;
+
+                buffer.push_back(line);
+                if (buffer.size() > limit) {
+                    buffer.pop_front();
+                }
+            }
+
+            std::ostringstream oss;
+            oss << "[";
+            bool first = true;
+            for (auto it = buffer.rbegin(); it != buffer.rend(); ++it) {
+                if (!first) oss << ",";
+                oss << *it;
+                first = false;
+            }
+            oss << "]";
+            res.set_content(oss.str(), "application/json");
+        });
+
+        http.Get("/users", [user_manager](const httplib::Request&, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+            auto users = user_manager->get_all_users();
+
+            std::ostringstream oss;
+            oss << "[";
+            bool first = true;
+            for (long long uid : users) {
+                if (!first) oss << ",";
+                oss << uid;
+                first = false;
+            }
+            oss << "]";
+            res.set_content(oss.str(), "application/json");
+        });
+    }
 
     // Market maker endpoints
     if (market_maker) {
