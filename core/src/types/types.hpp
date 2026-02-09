@@ -17,6 +17,7 @@ enum class TimeInForce {GTC, IOC, FOK};
 struct Order
 {
     long long id;
+    long long user_id = 0;
     Side side;
     int price;
     long long qty;
@@ -28,6 +29,8 @@ struct Trade
     long long trade_id;
     long long maker_id;
     long long taker_id;
+    long long maker_user_id = 0;
+    long long taker_user_id = 0;
     int price;
     long long qty;
     long long seq;

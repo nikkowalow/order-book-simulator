@@ -47,6 +47,7 @@ export interface OrderEvent {
 
 export interface RestingOrder {
   id: number;
+  user_id?: number;
   side: Side;
   price: number;
   qty: number;
