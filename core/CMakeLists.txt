@@ -15,6 +15,7 @@ find_package(Boost REQUIRED)
 add_library(core
     src/book/order_book.cpp
     src/engine/matching_engine.cpp
+    src/user/user_manager.cpp
     src/sim/seed_book.cpp
     utils/scoped_timer.cpp
 )
@@ -42,6 +43,7 @@ add_executable(tcp_server
     src/server/http_handlers.cpp
     src/server/book_serializer.cpp
     src/server/ws_trade_sink.cpp
+    src/server/ws_order_server.cpp
     src/logging/journal_trade_sink.cpp
     src/logging/journal_order_sink.cpp
     src/market_maker/market_maker.cpp
