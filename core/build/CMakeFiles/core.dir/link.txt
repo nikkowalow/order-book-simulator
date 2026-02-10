@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcore.a CMakeFiles/core.dir/src/book/order_book.cpp.o CMakeFiles/core.dir/src/engine/matching_engine.cpp.o CMakeFiles/core.dir/src/user/user_manager.cpp.o CMakeFiles/core.dir/src/sim/seed_book.cpp.o CMakeFiles/core.dir/utils/scoped_timer.cpp.o
-/usr/bin/ranlib libcore.a
