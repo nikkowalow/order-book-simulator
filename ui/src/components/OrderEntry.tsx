@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { SERVER_URL } from "../config/config";
-import { useUser } from "../context/UserContext";
+import { useWebSocket } from "../context/WebSocketContext";
 
 export default function OrderEntry() {
-  const { userId } = useUser();
+  const { send } = useWebSocket();
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
   const [orderType, setOrderType] = useState<"LIMIT" | "MARKET">("LIMIT");
@@ -13,7 +12,6 @@ export default function OrderEntry() {
   const [cancelLatencyMs, setCancelLatencyMs] = useState<number | null>(null);
 
   const submitOrder = async (side: "BUY" | "SELL") => {
-    console.log("Submitting order", { side, price, qty, orderType });
     const q = parseInt(qty, 10);
     if (!q || q <= 0) {
       setStatus("Invalid qty");
@@ -30,39 +28,27 @@ export default function OrderEntry() {
 
     setStatus(null);
 
-    const body: Record<string, unknown> = { side, qty: q, type: orderType };
+    const msg: Record<string, unknown> = {
+      action: "order",
+      side,
+      qty: q,
+      type: orderType,
+    };
     if (orderType === "LIMIT") {
-      body.price = parseInt(price, 10);
-    }
-    if (userId) {
-      body.user_id = userId;
+      msg.price = parseInt(price, 10);
     }
 
-    const t0 = performance.now();
     try {
-      const res = await fetch(`${SERVER_URL}/order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const { msg: data, rtt } = await send(msg);
+      setOrderLatencyMs(rtt);
 
-      const t1 = performance.now();
-      setOrderLatencyMs(t1 - t0);
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        const msg = data?.error
-          ? `HTTP ${res.status}: ${data.error}`
-          : `HTTP ${res.status}`;
-        setStatus(msg);
+      if (data.error) {
+        setStatus(data.error);
         return;
       }
 
       setStatus(`Order ${data.id}: ${data.trades?.length || 0} trades`);
     } catch (e: any) {
-      const t1 = performance.now();
-      setOrderLatencyMs(t1 - t0);
       setStatus(`Error: ${e?.message ?? "request failed"}`);
     }
   };
@@ -76,23 +62,18 @@ export default function OrderEntry() {
 
     setStatus(null);
 
-    const t0 = performance.now();
     try {
-      const res = await fetch(`${SERVER_URL}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, user_id: userId }),
-      });
+      const { msg: data, rtt } = await send({ action: "cancel", id });
+      setCancelLatencyMs(rtt);
 
-      const t1 = performance.now();
-      setCancelLatencyMs(t1 - t0);
+      if (data.error) {
+        setStatus(data.error);
+        return;
+      }
 
-      const data = await res.json();
       setStatus(data.ok ? "Cancelled" : "Not found");
     } catch (e: any) {
-      const t1 = performance.now();
-      setCancelLatencyMs(t1 - t0);
-      setStatus(`Error: ${e.message}`);
+      setStatus(`Error: ${e?.message ?? "request failed"}`);
     }
   };
 

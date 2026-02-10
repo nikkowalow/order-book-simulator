@@ -4,11 +4,11 @@ import TradeHistory from "./components/TradeHistory";
 import OrderEntry from "./components/OrderEntry";
 import RestingOrders from "./components/RestingOrders";
 import Header from "./components/Header";
-import { UserProvider } from "./context/UserContext";
+import { WebSocketProvider } from "./context/WebSocketContext";
 
 export default function App() {
   return (
-    <UserProvider>
+    <WebSocketProvider>
     <div
       style={{
         display: "grid",
@@ -60,6 +60,6 @@ export default function App() {
         </div>
       </div>
     </div>
-    </UserProvider>
+    </WebSocketProvider>
   );
 }

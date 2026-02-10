@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SERVER_URL } from "../config/config";
 import { useOrders } from "../hooks/useOrders";
-import { useUser } from "../context/UserContext";
+import { useWebSocket } from "../context/WebSocketContext";
 import { Side } from "../types/types";
 
 function fmt(n: number, decimals = 0) {
@@ -27,7 +27,7 @@ async function cancelOrder(id: number, userId: number | null) {
 
 export default function RestingOrders() {
   const { orders, err } = useOrders();
-  const { userId } = useUser();
+  const { userId } = useWebSocket();
   const [showMine, setShowMine] = useState(false);
 
   if (err) {
