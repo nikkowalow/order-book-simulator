@@ -17,7 +17,7 @@
 #include <market_maker/market_maker.hpp>
 #include <server/book_serializer.hpp>
 #include <server/http_handlers.hpp>
-#include <server/ws_trade_sink.hpp>
+#include <server/ws_server.hpp>
 #include <sim/seed_book.hpp>
 #include <user/user_manager.hpp>
 
@@ -41,20 +41,20 @@ int main(int argc, char **argv) {
 
   JournalTradeSink journal_trade_sink("trades.jsonl");
   JournalOrderSink journal_order_sink("orders.jsonl");
-  WsTradeSink ws_sink(9001);
-  ws_sink.start();
-
-  book.set_on_change(
-      [&ws_sink, &book]() { ws_sink.broadcast(serialize_book_json(book)); });
+  UserManager user_manager("users.jsonl");
 
   MultiTradeSink multi_sink;
   multi_sink.add_sink(&journal_trade_sink);
-  multi_sink.add_sink(&ws_sink);
-
-  UserManager user_manager("users.jsonl");
 
   MatchingEngine engine(book, &multi_sink, &journal_order_sink, &user_manager);
   std::mutex book_mtx;
+
+  WsServer ws_server(9001, book, engine, book_mtx, user_manager);
+  multi_sink.add_sink(&ws_server);
+  ws_server.start();
+
+  book.set_on_change(
+      [&ws_server, &book]() { ws_server.broadcast(serialize_book_json(book)); });
 
   MarketMaker mm(book, engine, book_mtx);
   //   mm.start();
