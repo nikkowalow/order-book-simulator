@@ -1,14 +1,15 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import OrderBookTable from "./components/OrderBookTable";
 import DepthChart from "./components/DepthChart";
 import TradeHistory from "./components/TradeHistory";
 import OrderEntry from "./components/OrderEntry";
 import RestingOrders from "./components/RestingOrders";
 import Header from "./components/Header";
+import AdminPage from "./pages/AdminPage";
 import { WebSocketProvider } from "./context/WebSocketContext";
 
-export default function App() {
+function Dashboard() {
   return (
-    <WebSocketProvider>
     <div
       style={{
         display: "grid",
@@ -60,6 +61,18 @@ export default function App() {
         </div>
       </div>
     </div>
-    </WebSocketProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <WebSocketProvider>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/components" element={<AdminPage />} />
+        </Routes>
+      </WebSocketProvider>
+    </BrowserRouter>
   );
 }
