@@ -12,6 +12,8 @@ export default function OrderEntry() {
   const [cancelLatencyMs, setCancelLatencyMs] = useState<number | null>(null);
 
   const submitOrder = async (side: "BUY" | "SELL") => {
+    let t1 = performance.now();
+    console.log(`t1 = ${t1.toFixed(1)} ms`);
     const q = parseInt(qty, 10);
     if (!q || q <= 0) {
       setStatus("Invalid qty");
@@ -39,8 +41,8 @@ export default function OrderEntry() {
     }
 
     try {
-      const { msg: data, rtt } = await send(msg);
-      setOrderLatencyMs(rtt);
+      const { msg: data } = await send(msg);
+      //   setOrderLatencyMs(rtt);
 
       if (data.error) {
         setStatus(data.error);
@@ -51,6 +53,9 @@ export default function OrderEntry() {
     } catch (e: any) {
       setStatus(`Error: ${e?.message ?? "request failed"}`);
     }
+    let t2 = performance.now();
+    console.log(`Order round-trip time: ${(t2 - t1).toFixed(1)} ms`);
+    setOrderLatencyMs(t2 - t1);
   };
 
   const submitCancel = async () => {
@@ -77,24 +82,46 @@ export default function OrderEntry() {
     }
   };
 
+  const isError =
+    status?.startsWith("Error") ||
+    status?.startsWith("Invalid") ||
+    status === "Not found";
+
   const inputStyle: React.CSSProperties = {
-    padding: "8px 12px",
-    border: "1px solid rgba(255,255,255,0.15)",
+    padding: "0 10px",
+    height: 30,
+    border: "1px solid rgba(255,255,255,0.1)",
     borderRadius: 6,
-    fontSize: 14,
+    fontSize: 13,
     width: 80,
     background: "rgba(255,255,255,0.05)",
-    color: "inherit",
+    color: "rgba(255,255,255,0.9)",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 10,
+    fontWeight: 600,
+    color: "rgba(255,255,255,0.3)",
+    letterSpacing: "0.07em",
+    textTransform: "uppercase",
+    marginBottom: 5,
+    display: "block",
   };
 
   const btnBase: React.CSSProperties = {
-    padding: "8px 16px",
+    height: 30,
     border: "none",
     borderRadius: 6,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 600,
     cursor: "pointer",
+    letterSpacing: "0.04em",
   };
+
+  const isLimit = orderType === "LIMIT";
+  const isMarket = orderType === "MARKET";
 
   return (
     <div
@@ -104,123 +131,180 @@ export default function OrderEntry() {
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
-        padding: 16,
+        padding: "0 16px",
+        justifyContent: "center",
       }}
     >
       <div
         style={{
           display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
           alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            borderRadius: 6,
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.15)",
-          }}
-        >
-          {(["LIMIT", "MARKET"] as const).map((t) => (
+        {/* Order type segmented control */}
+        <div>
+          <span style={labelStyle}>Type</span>
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.1)",
+              height: 30,
+            }}
+          >
             <button
-              key={t}
-              onClick={() => setOrderType(t)}
+              onClick={() => setOrderType("LIMIT")}
               style={{
                 ...btnBase,
                 borderRadius: 0,
-                padding: "8px 12px",
-                fontSize: 12,
-                background:
-                  orderType === t ? "rgba(255,255,255,0.15)" : "transparent",
-                color:
-                  orderType === t
-                    ? "rgba(255,255,255,0.9)"
-                    : "rgba(255,255,255,0.4)",
+                padding: "0 13px",
+                background: isLimit ? "rgba(59,130,246,0.22)" : "transparent",
+                color: isLimit ? "rgb(147,197,253)" : "rgba(255,255,255,0.3)",
+                borderRight: "1px solid rgba(255,255,255,0.1)",
+                transition: "background 0.15s, color 0.15s",
               }}
             >
-              {t}
+              LIMIT
             </button>
-          ))}
+            <button
+              onClick={() => setOrderType("MARKET")}
+              style={{
+                ...btnBase,
+                borderRadius: 0,
+                padding: "0 13px",
+                background: isMarket ? "rgba(245,158,11,0.18)" : "transparent",
+                color: isMarket ? "rgb(252,211,77)" : "rgba(255,255,255,0.3)",
+                transition: "background 0.15s, color 0.15s",
+              }}
+            >
+              MKT
+            </button>
+          </div>
         </div>
-        <input
-          type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          disabled={orderType !== "LIMIT"}
-          style={{
-            ...inputStyle,
-            backgroundColor: orderType === "LIMIT" ? "#2a2a2a" : "#2a2a2a",
-            color: orderType === "LIMIT" ? "#fff" : "#888",
-            cursor: orderType === "LIMIT" ? "text" : "not-allowed",
-          }}
-        />
-        <input
-          type="number"
-          placeholder="Qty"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          style={inputStyle}
-        />
-        <button
-          onClick={() => submitOrder("BUY")}
-          style={{ ...btnBase, background: "rgb(22,163,74)", color: "white" }}
-        >
-          Buy
-        </button>
-        <button
-          onClick={() => submitOrder("SELL")}
-          style={{ ...btnBase, background: "rgb(220,38,38)", color: "white" }}
-        >
-          Sell
-        </button>
+
+        {/* Price */}
         <div
-          style={{ width: 1, height: 32, background: "rgba(255,255,255,0.1)" }}
-        />
-        <input
-          type="number"
-          placeholder="Order ID"
-          value={cancelId}
-          onChange={(e) => setCancelId(e.target.value)}
-          style={inputStyle}
-        />
+          style={{
+            opacity: isLimit ? 1 : 0.3,
+            transition: "opacity 0.15s",
+          }}
+        >
+          <span style={labelStyle}>Price</span>
+          <input
+            type="number"
+            placeholder="0"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            disabled={!isLimit}
+            style={{
+              ...inputStyle,
+              cursor: isLimit ? "text" : "not-allowed",
+            }}
+          />
+        </div>
+
+        {/* Qty */}
+        <div>
+          <span style={labelStyle}>Qty</span>
+          <input
+            type="number"
+            placeholder="0"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Buy / Sell */}
+        <div style={{ display: "flex", gap: 6, alignSelf: "flex-end" }}>
+          <button
+            onClick={() => submitOrder("BUY")}
+            style={{
+              ...btnBase,
+              padding: "0 22px",
+              background: "rgb(22,163,74)",
+              color: "white",
+            }}
+          >
+            BUY
+          </button>
+          <button
+            onClick={() => submitOrder("SELL")}
+            style={{
+              ...btnBase,
+              padding: "0 20px",
+              background: "rgb(220,38,38)",
+              color: "white",
+            }}
+          >
+            SELL
+          </button>
+        </div>
+
+        {/* Cancel */}
+        <div>
+          <span style={labelStyle}>Order ID</span>
+          <input
+            type="number"
+            placeholder="ID"
+            value={cancelId}
+            onChange={(e) => setCancelId(e.target.value)}
+            style={{ ...inputStyle, width: 72 }}
+          />
+        </div>
+
         <button
           onClick={submitCancel}
           style={{
             ...btnBase,
-            background: "rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.7)",
+            padding: "0 16px",
+            background: "rgba(255,255,255,0.06)",
+            color: "rgba(255,255,255,0.55)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            alignSelf: "flex-end",
           }}
         >
-          Cancel
+          CANCEL
         </button>
+
+        {/* Status message */}
         {status && (
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: isError ? "rgb(248,113,113)" : "rgba(255,255,255,0.45)",
+              alignSelf: "center",
+            }}
+          >
             {status}
           </span>
         )}
-        <div style={{ flexBasis: "100%", height: 0 }} />
 
+        {/* Latencies pushed to right */}
         <div
           style={{
+            marginLeft: "auto",
             display: "flex",
-            gap: 16,
+            gap: 18,
             alignItems: "center",
-            flexWrap: "wrap",
           }}
         >
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
-            Order latency:{" "}
-            <strong style={{ color: "rgba(255,255,255,0.75)" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.28)" }}>
+            Order{" "}
+            <strong
+              style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}
+            >
               {orderLatencyMs == null ? "—" : `${orderLatencyMs.toFixed(1)} ms`}
             </strong>
           </span>
-
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
-            Cancel latency:{" "}
-            <strong style={{ color: "rgba(255,255,255,0.75)" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.28)" }}>
+            Cancel{" "}
+            <strong
+              style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}
+            >
               {cancelLatencyMs == null
                 ? "—"
                 : `${cancelLatencyMs.toFixed(1)} ms`}
