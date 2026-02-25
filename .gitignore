@@ -42,6 +42,7 @@
 
 core/build/
 core/build-linux/
+core/*.jsonl
 
 ui/node_modules/
 
