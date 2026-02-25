@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useWebSocket } from "../context/WebSocketContext";
+
+type Toast = { msg: string; type: "success" | "error" } | null;
 
 export default function OrderEntry() {
   const { send } = useWebSocket();
@@ -7,28 +9,31 @@ export default function OrderEntry() {
   const [qty, setQty] = useState("");
   const [orderType, setOrderType] = useState<"LIMIT" | "MARKET">("LIMIT");
   const [cancelId, setCancelId] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
   const [orderLatencyMs, setOrderLatencyMs] = useState<number | null>(null);
   const [cancelLatencyMs, setCancelLatencyMs] = useState<number | null>(null);
+  const [toast, setToast] = useState<Toast>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (msg: string, type: "success" | "error") => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, type });
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  };
 
   const submitOrder = async (side: "BUY" | "SELL") => {
-    let t1 = performance.now();
-    console.log(`t1 = ${t1.toFixed(1)} ms`);
     const q = parseInt(qty, 10);
     if (!q || q <= 0) {
-      setStatus("Invalid qty");
+      showToast("Invalid quantity", "error");
       return;
     }
 
     if (orderType === "LIMIT") {
       const p = parseInt(price, 10);
       if (!p || p <= 0) {
-        setStatus("Invalid price");
+        showToast("Invalid price", "error");
         return;
       }
     }
-
-    setStatus(null);
 
     const msg: Record<string, unknown> = {
       action: "order",
@@ -36,56 +41,55 @@ export default function OrderEntry() {
       qty: q,
       type: orderType,
     };
-    if (orderType === "LIMIT") {
-      msg.price = parseInt(price, 10);
-    }
+    if (orderType === "LIMIT") msg.price = parseInt(price, 10);
 
+    const t1 = performance.now();
     try {
       const { msg: data } = await send(msg);
-      //   setOrderLatencyMs(rtt);
+      const t2 = performance.now();
+      setOrderLatencyMs(t2 - t1);
 
       if (data.error) {
-        setStatus(data.error);
+        showToast(`Rejected: ${data.error}`, "error");
         return;
       }
 
-      setStatus(`Order ${data.id}: ${data.trades?.length || 0} trades`);
+      const filled = data.trades?.length ?? 0;
+      showToast(
+        filled > 0
+          ? `${side} filled — ${filled} trade${filled !== 1 ? "s" : ""}`
+          : `${side} order resting`,
+        "success",
+      );
     } catch (e: any) {
-      setStatus(`Error: ${e?.message ?? "request failed"}`);
+      showToast(e?.message ?? "Request failed", "error");
     }
-    let t2 = performance.now();
-    console.log(`Order round-trip time: ${(t2 - t1).toFixed(1)} ms`);
-    setOrderLatencyMs(t2 - t1);
   };
 
   const submitCancel = async () => {
     const id = parseInt(cancelId, 10);
     if (!id || id <= 0) {
-      setStatus("Invalid order ID");
+      showToast("Invalid order ID", "error");
       return;
     }
 
-    setStatus(null);
-
+    const t1 = performance.now();
     try {
       const { msg: data, rtt } = await send({ action: "cancel", id });
       setCancelLatencyMs(rtt);
 
       if (data.error) {
-        setStatus(data.error);
+        showToast(`Rejected: ${data.error}`, "error");
         return;
       }
-
-      setStatus(data.ok ? "Cancelled" : "Not found");
+      showToast(
+        data.ok ? "Order cancelled" : "Order not found",
+        data.ok ? "success" : "error",
+      );
     } catch (e: any) {
-      setStatus(`Error: ${e?.message ?? "request failed"}`);
+      showToast(e?.message ?? "Request failed", "error");
     }
   };
-
-  const isError =
-    status?.startsWith("Error") ||
-    status?.startsWith("Invalid") ||
-    status === "Not found";
 
   const inputStyle: React.CSSProperties = {
     padding: "0 10px",
@@ -133,6 +137,8 @@ export default function OrderEntry() {
         boxSizing: "border-box",
         padding: "0 16px",
         justifyContent: "center",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <div
@@ -270,19 +276,6 @@ export default function OrderEntry() {
           CANCEL
         </button>
 
-        {/* Status message */}
-        {status && (
-          <span
-            style={{
-              fontSize: 12,
-              color: isError ? "rgb(248,113,113)" : "rgba(255,255,255,0.45)",
-              alignSelf: "center",
-            }}
-          >
-            {status}
-          </span>
-        )}
-
         {/* Latencies pushed to right */}
         <div
           style={{
@@ -312,6 +305,35 @@ export default function OrderEntry() {
           </span>
         </div>
       </div>
+
+      {/* Toast bar */}
+      {toast && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            borderRadius: "0 0 14px 14px",
+            padding: "7px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background:
+              toast.type === "success"
+                ? "rgba(22,163,74,0.9)"
+                : "rgba(220,38,38,0.9)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.75 }}>
+            {toast.type === "success" ? "✓" : "✕"}
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "white" }}>
+            {toast.msg}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
