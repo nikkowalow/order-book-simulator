@@ -10,9 +10,9 @@
 #include "types/types.hpp"
 
 struct Position {
-    long long balance = 1000;
+    long long balance = 100000;
     long long reserved_balance = 0;  // locked in resting BUY limit orders
-    long long shares = 10;
+    long long shares = 100;
     long long reserved_shares = 0;   // locked in resting SELL limit orders
     long long net_qty = 0;
     long long total_buy_qty = 0;
