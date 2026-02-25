@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { SERVER_URL } from "../config/config";
 
 export interface Position {
-  cash: number;
+  balance: number;
+  reservedBalance: number;
   shares: number;
+  reservedShares: number;
   netQty: number;
 }
 
@@ -16,13 +18,13 @@ export function usePosition(userId: number | null): Position | null {
       const res = await fetch(`${SERVER_URL}/user/position?user_id=${userId}`);
       const data = await res.json();
       setPosition({
-        cash: data.cash ?? 1000,
+        balance: data.balance ?? 1000,
+        reservedBalance: data.reservedBalance ?? 0,
         shares: data.shares ?? 10,
+        reservedShares: data.reservedShares ?? 0,
         netQty: data.netQty ?? 0,
       });
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [userId]);
 
   useEffect(() => {

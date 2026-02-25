@@ -117,35 +117,41 @@ export default function RestingOrders() {
         >
           {[
             {
-              label: "CASH",
-              value: `$${fmt(position.cash)}`,
+              label: "BALANCE",
+              value: `$${fmt(position.balance - position.reservedBalance)}`,
               color:
-                position.cash >= 0
+                position.balance - position.reservedBalance >= 0
                   ? "rgba(255,255,255,0.8)"
                   : "rgb(248,113,113)",
             },
             {
-              label: "SHARES",
-              value: fmt(position.shares),
-              color:
-                position.shares >= 0 ? "rgb(74,222,128)" : "rgb(248,113,113)",
+              label: "RSVD $",
+              value: `$${fmt(position.reservedBalance)}`,
+              color: position.reservedBalance > 0
+                ? "rgb(250,204,21)"
+                : "rgba(255,255,255,0.3)",
             },
             {
-              label: "NET QTY",
-              value: (position.netQty >= 0 ? "+" : "") + fmt(position.netQty),
+              label: "SHARES",
+              value: fmt(position.shares - position.reservedShares),
               color:
-                position.netQty > 0
+                position.shares - position.reservedShares >= 0
                   ? "rgb(74,222,128)"
-                  : position.netQty < 0
-                    ? "rgb(248,113,113)"
-                    : "rgba(255,255,255,0.45)",
+                  : "rgb(248,113,113)",
+            },
+            {
+              label: "RSVD SHR",
+              value: fmt(position.reservedShares),
+              color: position.reservedShares > 0
+                ? "rgb(250,204,21)"
+                : "rgba(255,255,255,0.3)",
             },
           ].map(({ label, value, color }) => (
             <div
               key={label}
               style={{
                 flex: 1,
-                padding: "7px 12px",
+                padding: "6px 10px",
                 borderRight: "1px solid rgba(255,255,255,0.06)",
               }}
             >
