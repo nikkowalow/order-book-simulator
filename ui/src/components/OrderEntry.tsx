@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useWebSocket } from "../context/WebSocketContext";
+import { useAnalyticsStore } from "../stores/analyticsStore";
 
 type Toast = { msg: string; type: "success" | "error" } | null;
 
@@ -13,6 +14,7 @@ export default function OrderEntry() {
   const [cancelLatencyMs, setCancelLatencyMs] = useState<number | null>(null);
   const [toast, setToast] = useState<Toast>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { addLatency } = useAnalyticsStore.getState();
 
   const showToast = (msg: string, type: "success" | "error") => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -48,6 +50,7 @@ export default function OrderEntry() {
       const { msg: data } = await send(msg);
       const t2 = performance.now();
       setOrderLatencyMs(t2 - t1);
+      addLatency(t2 - t1);
 
       if (data.error) {
         showToast(`Rejected: ${data.error}`, "error");

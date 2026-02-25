@@ -4,6 +4,7 @@ import DepthChart from "./components/DepthChart";
 import TradeHistory from "./components/TradeHistory";
 import OrderEntry from "./components/OrderEntry";
 import RestingOrders from "./components/RestingOrders";
+import Analytics from "./components/Analytics";
 import Header from "./components/Header";
 import AdminPage from "./pages/AdminPage";
 import { WebSocketProvider } from "./context/WebSocketContext";
@@ -41,13 +42,13 @@ function Dashboard() {
         <DepthChart />
       </div>
 
-      {/* Right column: Resting Orders + Order Entry */}
+      {/* Right column: Resting Orders + Analytics + Order Entry */}
       <div
         style={{
           gridColumn: "3",
           gridRow: "2 / 4",
           display: "grid",
-          gridTemplateRows: "4fr 1fr",
+          gridTemplateRows: "2fr 1fr 1fr",
           gap: 8,
           overflow: "hidden",
         }}
@@ -56,7 +57,11 @@ function Dashboard() {
           <RestingOrders />
         </div>
 
-        <div style={{ overflow: "auto" }}>
+        <div style={{ overflow: "hidden" }}>
+          <Analytics />
+        </div>
+
+        <div style={{ overflow: "hidden" }}>
           <OrderEntry />
         </div>
       </div>
