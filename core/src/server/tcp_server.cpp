@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
   //   mm.start();
 
   TradingBots bots(book, engine, book_mtx);
-  bots.start();
+//   bots.start();
 
   httplib::Server http;
   register_http_routes(http, book, engine, book_mtx, &mm, &user_manager);

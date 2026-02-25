@@ -43,14 +43,16 @@ export function VolumeBar({
         <div
           style={{
             width: `${bidPct}%`,
-            background: "linear-gradient(90deg, rgba(34,197,94,0.6) 0%, rgba(34,197,94,0.9) 100%)",
+            background:
+              "linear-gradient(90deg, rgba(34,197,94,0.6) 0%, rgba(34,197,94,0.9) 100%)",
             transition: "width 200ms ease",
           }}
         />
         <div
           style={{
             width: `${askPct}%`,
-            background: "linear-gradient(90deg, rgba(239,68,68,0.9) 0%, rgba(239,68,68,0.6) 100%)",
+            background:
+              "linear-gradient(90deg, rgba(239,68,68,0.9) 0%, rgba(239,68,68,0.6) 100%)",
             transition: "width 200ms ease",
           }}
         />

@@ -8,6 +8,7 @@ import Analytics from "./components/Analytics";
 import Header from "./components/Header";
 import AdminPage from "./pages/AdminPage";
 import { WebSocketProvider } from "./context/WebSocketContext";
+import ViewportGate from "./components/ViewportGate";
 
 function Dashboard() {
   return (
@@ -73,10 +74,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <WebSocketProvider>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/components" element={<AdminPage />} />
-        </Routes>
+        <ViewportGate>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/components" element={<AdminPage />} />
+          </Routes>
+        </ViewportGate>
       </WebSocketProvider>
     </BrowserRouter>
   );
