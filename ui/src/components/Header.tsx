@@ -73,11 +73,7 @@ export default function Header() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <img
-          src={logo}
-          alt="Logo"
-          style={{ height: 28, width: 28 }}
-        />
+        <img src={logo} alt="Logo" style={{ height: 28, width: 28 }} />
         <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: 0.5 }}>
           Order Book Simulator
         </span>

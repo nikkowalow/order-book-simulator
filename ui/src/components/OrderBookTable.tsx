@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { BarCell } from "./BarCell";
 import { VolumeBar } from "./VolumeBar";
 import { useWebSocket } from "../context/WebSocketContext";
+import { MarketPrice } from "./MarketPrice";
 
 function fmt(n: number, decimals = 0) {
   return n.toLocaleString(undefined, {
@@ -64,9 +65,10 @@ export default function OrderBookTable() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "1fr auto 1fr",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
           background: "rgba(255,255,255,0.03)",
+          alignItems: "center",
         }}
       >
         <div
@@ -78,6 +80,7 @@ export default function OrderBookTable() {
         >
           Bids
         </div>
+        <MarketPrice />
         <div
           style={{
             padding: "10px 12px",
