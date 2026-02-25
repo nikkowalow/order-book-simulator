@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { SERVER_URL } from "../config/config";
 import { useWebSocket } from "../context/WebSocketContext";
-import { usePosition } from "../hooks/usePosition";
 import { Side } from "../types/types";
 
 function fmt(n: number, decimals = 0) {
@@ -27,7 +26,6 @@ async function cancelOrder(id: number, userId: number | null) {
 
 export default function RestingOrders() {
   const { orders, userId } = useWebSocket();
-  const position = usePosition(userId);
   const [showMine, setShowMine] = useState(false);
 
   //   if (err) {
@@ -104,82 +102,6 @@ export default function RestingOrders() {
           })}
         </div>
       </div>
-
-      {/* Balance strip */}
-      {position != null && (
-        <div
-          style={{
-            display: "flex",
-            gap: 0,
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-            background: "rgba(255,255,255,0.02)",
-          }}
-        >
-          {[
-            {
-              label: "BALANCE",
-              value: `$${fmt(position.balance - position.reservedBalance)}`,
-              color:
-                position.balance - position.reservedBalance >= 0
-                  ? "rgba(255,255,255,0.8)"
-                  : "rgb(248,113,113)",
-            },
-            {
-              label: "RSVD $",
-              value: `$${fmt(position.reservedBalance)}`,
-              color: position.reservedBalance > 0
-                ? "rgb(250,204,21)"
-                : "rgba(255,255,255,0.3)",
-            },
-            {
-              label: "SHARES",
-              value: fmt(position.shares - position.reservedShares),
-              color:
-                position.shares - position.reservedShares >= 0
-                  ? "rgb(74,222,128)"
-                  : "rgb(248,113,113)",
-            },
-            {
-              label: "RSVD SHR",
-              value: fmt(position.reservedShares),
-              color: position.reservedShares > 0
-                ? "rgb(250,204,21)"
-                : "rgba(255,255,255,0.3)",
-            },
-          ].map(({ label, value, color }) => (
-            <div
-              key={label}
-              style={{
-                flex: 1,
-                padding: "6px 10px",
-                borderRight: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  color: "rgba(255,255,255,0.28)",
-                  marginBottom: 2,
-                }}
-              >
-                {label}
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Column labels */}
       <div
