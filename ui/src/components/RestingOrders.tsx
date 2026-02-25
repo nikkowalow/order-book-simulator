@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SERVER_URL } from "../config/config";
-import { useOrders } from "../hooks/useOrders";
 import { useWebSocket } from "../context/WebSocketContext";
+import { usePosition } from "../hooks/usePosition";
 import { Side } from "../types/types";
 
 function fmt(n: number, decimals = 0) {
@@ -26,17 +26,17 @@ async function cancelOrder(id: number, userId: number | null) {
 }
 
 export default function RestingOrders() {
-  const { orders, err } = useOrders();
-  const { userId } = useWebSocket();
+  const { orders, userId } = useWebSocket();
+  const position = usePosition(userId);
   const [showMine, setShowMine] = useState(false);
 
-  if (err) {
-    return (
-      <div style={{ maxWidth: 900, margin: "24px auto", color: "crimson" }}>
-        Error fetching orders: {err}
-      </div>
-    );
-  }
+  //   if (err) {
+  //     return (
+  //       <div style={{ maxWidth: 900, margin: "24px auto", color: "crimson" }}>
+  //         Error fetching orders: {err}
+  //       </div>
+  //     );
+  //   }
 
   if (!orders) return <div style={{ maxWidth: 900 }}>Loading...</div>;
 
@@ -81,16 +81,13 @@ export default function RestingOrders() {
         >
           {(["All", "Mine"] as const).map((label) => {
             const active =
-              (label === "Mine" && showMine) ||
-              (label === "All" && !showMine);
+              (label === "Mine" && showMine) || (label === "All" && !showMine);
             return (
               <button
                 key={label}
                 onClick={() => setShowMine(label === "Mine")}
                 style={{
-                  background: active
-                    ? "rgba(255,255,255,0.15)"
-                    : "transparent",
+                  background: active ? "rgba(255,255,255,0.15)" : "transparent",
                   color: active
                     ? "rgba(255,255,255,0.9)"
                     : "rgba(255,255,255,0.4)",
@@ -107,6 +104,76 @@ export default function RestingOrders() {
           })}
         </div>
       </div>
+
+      {/* Balance strip */}
+      {position != null && (
+        <div
+          style={{
+            display: "flex",
+            gap: 0,
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.02)",
+          }}
+        >
+          {[
+            {
+              label: "CASH",
+              value: `$${fmt(position.cash)}`,
+              color:
+                position.cash >= 0
+                  ? "rgba(255,255,255,0.8)"
+                  : "rgb(248,113,113)",
+            },
+            {
+              label: "SHARES",
+              value: fmt(position.shares),
+              color:
+                position.shares >= 0 ? "rgb(74,222,128)" : "rgb(248,113,113)",
+            },
+            {
+              label: "NET QTY",
+              value: (position.netQty >= 0 ? "+" : "") + fmt(position.netQty),
+              color:
+                position.netQty > 0
+                  ? "rgb(74,222,128)"
+                  : position.netQty < 0
+                    ? "rgb(248,113,113)"
+                    : "rgba(255,255,255,0.45)",
+            },
+          ].map(({ label, value, color }) => (
+            <div
+              key={label}
+              style={{
+                flex: 1,
+                padding: "7px 12px",
+                borderRight: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  color: "rgba(255,255,255,0.28)",
+                  marginBottom: 2,
+                }}
+              >
+                {label}
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Column labels */}
       <div

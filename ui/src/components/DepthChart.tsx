@@ -1,8 +1,8 @@
 import { useMemo, useRef, useEffect } from "react";
-import { useBook } from "../hooks/useBook";
+import { useWebSocket } from "../context/WebSocketContext";
 
 export default function DepthChart() {
-  const { book, err } = useBook();
+  const { book } = useWebSocket();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const cumulative = useMemo(() => {
@@ -159,13 +159,13 @@ export default function DepthChart() {
     }
   }, [cumulative]);
 
-  if (err) {
-    return (
-      <div style={{ maxWidth: 900, margin: "16px auto", color: "crimson" }}>
-        Depth chart error: {err}
-      </div>
-    );
-  }
+  //   if (err) {
+  //     return (
+  //       <div style={{ maxWidth: 900, margin: "16px auto", color: "crimson" }}>
+  //         Depth chart error: {err}
+  //       </div>
+  //     );
+  //   }
 
   if (!book) {
     return <div style={{ maxWidth: 900, margin: "16px auto" }}>Loading...</div>;

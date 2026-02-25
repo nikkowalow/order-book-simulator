@@ -64,22 +64,30 @@ void UserManager::on_fill(long long maker_order_id, long long taker_order_id,
 
     // Taker is buying → maker is selling
     if (taker_side == Side::Buy) {
-        // Taker bought
+        // Taker bought: pays cash, receives shares
+        positions_[taker_user].cash   -= value;
+        positions_[taker_user].shares += qty;
         positions_[taker_user].net_qty += qty;
         positions_[taker_user].total_buy_qty += qty;
         positions_[taker_user].total_buy_value += value;
 
-        // Maker sold
+        // Maker sold: receives cash, gives up shares
+        positions_[maker_user].cash   += value;
+        positions_[maker_user].shares -= qty;
         positions_[maker_user].net_qty -= qty;
         positions_[maker_user].total_sell_qty += qty;
         positions_[maker_user].total_sell_value += value;
     } else {
-        // Taker sold
+        // Taker sold: receives cash, gives up shares
+        positions_[taker_user].cash   += value;
+        positions_[taker_user].shares -= qty;
         positions_[taker_user].net_qty -= qty;
         positions_[taker_user].total_sell_qty += qty;
         positions_[taker_user].total_sell_value += value;
 
-        // Maker bought
+        // Maker bought: pays cash, receives shares
+        positions_[maker_user].cash   -= value;
+        positions_[maker_user].shares += qty;
         positions_[maker_user].net_qty += qty;
         positions_[maker_user].total_buy_qty += qty;
         positions_[maker_user].total_buy_value += value;

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include "book_serializer.hpp"
 
 WsServer::WsServer(int port, OrderBook& book, MatchingEngine& engine,
                     std::mutex& book_mtx, UserManager& user_manager)
@@ -107,6 +108,18 @@ void WsServer::accept_loop()
                 session_msg << "{\"type\":\"session\",\"userId\":" << user_id
                             << ",\"reconnected\":" << (reconnected ? "true" : "false") << "}";
                 send_to_client(*client, session_msg.str());
+
+                {
+                    std::lock_guard<std::mutex> lk(book_mtx_);
+                    std::string snapshot = serialize_book_json(book_);
+                    send_to_client(*client, snapshot);
+                }
+
+                {
+                    std::lock_guard<std::mutex> lk(book_mtx_);
+                    std::string orders = serialize_orders_json(book_);
+                    send_to_client(*client, orders);
+                }
 
                 std::cout << "WsServer: client connected (user_id=" << user_id << ")\n";
 

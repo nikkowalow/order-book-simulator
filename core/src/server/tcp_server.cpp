@@ -53,8 +53,10 @@ int main(int argc, char **argv) {
   multi_sink.add_sink(&ws_server);
   ws_server.start();
 
-  book.set_on_change(
-      [&ws_server, &book]() { ws_server.broadcast(serialize_book_json(book)); });
+  book.set_on_change([&ws_server, &book]() {
+    ws_server.broadcast(serialize_book_json(book));
+    ws_server.broadcast(serialize_orders_json(book));
+  });
 
   MarketMaker mm(book, engine, book_mtx);
   //   mm.start();

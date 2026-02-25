@@ -4,7 +4,7 @@
 std::string serialize_book_json(const OrderBook& book, int depth)
 {
     std::ostringstream oss;
-    oss << "{\"bids\":[";
+    oss << "{\"type\":\"book_snapshot\",\"payload\":{\"bids\":[";
     bool first = true;
     int i = 0;
 
@@ -46,14 +46,14 @@ std::string serialize_book_json(const OrderBook& book, int depth)
         first = false;
     }
 
-    oss << "]}";
+    oss << "]}}";
     return oss.str();
 }
 
 std::string serialize_orders_json(const OrderBook& book)
 {
     std::ostringstream oss;
-    oss << "[";
+    oss << "{\"type\":\"orders_update\",\"payload\":[";
     bool first = true;
 
     // Bids
@@ -82,6 +82,6 @@ std::string serialize_orders_json(const OrderBook& book)
         }
     }
 
-    oss << "]";
+    oss << "]}";
     return oss.str();
 }

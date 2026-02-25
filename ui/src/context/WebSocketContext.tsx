@@ -8,17 +8,24 @@ import {
   useState,
 } from "react";
 import { WS_URL } from "../config/config";
+import { Book, RestingOrder, Trade } from "../types/types";
 
 const SESSION_KEY = "obs_userId";
 
 interface WebSocketContextValue {
   send: (message: object) => Promise<any>;
   userId: number | null;
+  book: Book | null;
+  trades: Trade[];
+  orders: RestingOrder[] | null;
 }
-
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
+  const [book, setBook] = useState<Book | null>(null);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [orders, setOrders] = useState<RestingOrder[] | null>(null);
+
   const wsRef = useRef<WebSocket | null>(null);
   const [userId, setUserId] = useState<number | null>(() => {
     const stored = localStorage.getItem(SESSION_KEY);
@@ -59,7 +66,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(SESSION_KEY, String(msg.userId));
           console.log(
             msg.reconnected ? "Session resumed" : "Session assigned",
-            "userId:", msg.userId,
+            "userId:",
+            msg.userId,
           );
           return;
         }
@@ -74,7 +82,23 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Unsolicited messages (book updates, trades, etc.) — ignored here
+        if (msg.type === "book_snapshot" || msg.type === "book_update") {
+          console.log("Received book update via WSocket", msg.payload);
+          setBook(msg.payload);
+          return;
+        }
+
+        if (msg.type === "trade") {
+          console.log("Received trade via WS", msg.payload);
+          setTrades((prev) => [msg.payload, ...prev].slice(0, 200));
+          return;
+        }
+
+        if (msg.type === "orders_update") {
+          console.log("Received orders update via WS", msg.payload);
+          setOrders(msg.payload);
+          return;
+        }
       };
 
       ws.onclose = () => {
@@ -116,7 +140,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <WebSocketContext.Provider value={{ send, userId }}>
+    <WebSocketContext.Provider value={{ send, userId, book, trades, orders }}>
       {children}
     </WebSocketContext.Provider>
   );

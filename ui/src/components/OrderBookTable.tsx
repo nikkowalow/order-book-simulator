@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { BarCell } from "./BarCell";
 import { VolumeBar } from "./VolumeBar";
-import { useBook } from "../hooks/useBook";
+import { useWebSocket } from "../context/WebSocketContext";
 
 function fmt(n: number, decimals = 0) {
   return n.toLocaleString(undefined, {
@@ -11,7 +11,7 @@ function fmt(n: number, decimals = 0) {
 }
 
 export default function OrderBookTable() {
-  const { book, err } = useBook();
+  const { book } = useWebSocket();
   const ROW_HEIGHT = 28;
   const HEADER_HEIGHT = 92; // header + column labels + footer (approx)
 
@@ -32,13 +32,13 @@ export default function OrderBookTable() {
     return { bidVolume, askVolume };
   }, [book]);
 
-  if (err) {
-    return (
-      <div style={{ maxWidth: 900, margin: "24px auto", color: "crimson" }}>
-        Error fetching book: {err}
-      </div>
-    );
-  }
+  //   if (err) {
+  //     return (
+  //       <div style={{ maxWidth: 900, margin: "24px auto", color: "crimson" }}>
+  //         Error fetching book: {err}
+  //       </div>
+  //     );
+  //   }
 
   if (!book)
     return <div style={{ maxWidth: 900, margin: "24px auto" }}>Loading…</div>;
