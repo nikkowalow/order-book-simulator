@@ -23,6 +23,8 @@ public:
 
     long long next_user_id();
 
+    long long reconnect_user(long long uid);
+
     void register_order(long long order_id, long long user_id);
     long long get_user_for_order(long long order_id) const;
 

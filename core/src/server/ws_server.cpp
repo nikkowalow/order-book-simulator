@@ -5,6 +5,8 @@
 #include <book/order_book.hpp>
 #include <engine/matching_engine.hpp>
 
+#include <boost/beast/http.hpp>
+
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -69,10 +71,27 @@ void WsServer::accept_loop()
 
             try
             {
-                auto ws = std::make_shared<WsStream>(std::move(socket));
-                ws->accept();
+                beast::flat_buffer http_buf;
+                beast::http::request<beast::http::empty_body> http_req;
+                beast::http::read(socket, http_buf, http_req);
 
-                long long user_id = user_manager_.next_user_id();
+                long long reclaim_uid = 0;
+                std::string target(http_req.target());
+                auto q = target.find('?');
+                if (q != std::string::npos) {
+                    std::string qs = target.substr(q + 1);
+                    auto key = qs.find("userId=");
+                    if (key != std::string::npos) {
+                        try {
+                            reclaim_uid = std::stoll(qs.substr(key + 7));
+                        } catch (...) {}
+                    }
+                }
+
+                auto ws = std::make_shared<WsStream>(std::move(socket));
+                ws->accept(http_req);
+
+                long long user_id = user_manager_.reconnect_user(reclaim_uid);
 
                 auto client = std::make_shared<Client>();
                 client->ws = ws;
@@ -83,14 +102,14 @@ void WsServer::accept_loop()
                     clients_.push_back(client);
                 }
 
-                // Send session message
+                bool reconnected = (reclaim_uid > 0 && reclaim_uid == user_id);
                 std::ostringstream session_msg;
-                session_msg << "{\"type\":\"session\",\"userId\":" << user_id << "}";
+                session_msg << "{\"type\":\"session\",\"userId\":" << user_id
+                            << ",\"reconnected\":" << (reconnected ? "true" : "false") << "}";
                 send_to_client(*client, session_msg.str());
 
                 std::cout << "WsServer: client connected (user_id=" << user_id << ")\n";
 
-                // Per-client read loop in its own thread
                 std::thread(&WsServer::handle_client, this, client).detach();
             }
             catch (const std::exception& e)

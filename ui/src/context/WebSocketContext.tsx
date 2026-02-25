@@ -9,6 +9,8 @@ import {
 } from "react";
 import { WS_URL } from "../config/config";
 
+const SESSION_KEY = "obs_userId";
+
 interface WebSocketContextValue {
   send: (message: object) => Promise<any>;
   userId: number | null;
@@ -18,7 +20,10 @@ const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<number | null>(() => {
+    const stored = localStorage.getItem(SESSION_KEY);
+    return stored ? parseInt(stored, 10) : null;
+  });
 
   const pending = useRef(
     new Map<
@@ -35,7 +40,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     let reconnectTimer: ReturnType<typeof setTimeout>;
 
     function connect() {
-      const ws = new WebSocket(WS_URL);
+      // Append stored userId as query param so the server can reclaim the session.
+      const stored = localStorage.getItem(SESSION_KEY);
+      const url = stored ? `${WS_URL}?userId=${stored}` : WS_URL;
+      const ws = new WebSocket(url);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -48,7 +56,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         // Handle session assignment from server
         if (msg.type === "session" && msg.userId) {
           setUserId(msg.userId);
-          console.log("Session assigned, userId:", msg.userId);
+          localStorage.setItem(SESSION_KEY, String(msg.userId));
+          console.log(
+            msg.reconnected ? "Session resumed" : "Session assigned",
+            "userId:", msg.userId,
+          );
           return;
         }
 
@@ -67,7 +79,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       ws.onclose = () => {
         console.log("WebSocket disconnected, reconnecting...");
-        setUserId(null);
         reconnectTimer = setTimeout(connect, 2000);
       };
 

@@ -1,4 +1,5 @@
 #include "user/user_manager.hpp"
+#include <algorithm>
 
 UserManager::UserManager(const std::string& journal_path)
     : journal_(journal_path, std::ios::app)
@@ -83,6 +84,27 @@ void UserManager::on_fill(long long maker_order_id, long long taker_order_id,
         positions_[maker_user].total_buy_qty += qty;
         positions_[maker_user].total_buy_value += value;
     }
+}
+
+long long UserManager::reconnect_user(long long uid) {
+    if (uid <= 0)
+        return next_user_id();
+
+    long long expected = next_id_.load(std::memory_order_relaxed);
+    while (expected <= uid) {
+        if (next_id_.compare_exchange_weak(expected, uid + 1,
+                std::memory_order_relaxed, std::memory_order_relaxed))
+            break;
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(mtx_);
+        positions_.emplace(uid, Position{});
+        if (std::find(users_.begin(), users_.end(), uid) == users_.end())
+            users_.push_back(uid);
+    }
+
+    return uid;
 }
 
 Position UserManager::get_position(long long user_id) const
