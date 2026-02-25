@@ -10,8 +10,10 @@
 #include "types/types.hpp"
 
 struct Position {
-    long long cash = 1000;
+    long long balance = 1000;
+    long long reserved_balance = 0;  // locked in resting BUY limit orders
     long long shares = 10;
+    long long reserved_shares = 0;   // locked in resting SELL limit orders
     long long net_qty = 0;
     long long total_buy_qty = 0;
     long long total_sell_qty = 0;
@@ -32,6 +34,9 @@ public:
 
     void on_fill(long long maker_order_id, long long taker_order_id,
                  int price, long long qty, Side taker_side);
+
+    void on_order_resting(long long order_id, Side side, int price, long long qty);
+    void on_cancel(long long order_id, Side side, int price, long long remaining_qty);
 
     Position get_position(long long user_id) const;
     std::vector<long long> get_all_users() const;

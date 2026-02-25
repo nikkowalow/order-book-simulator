@@ -14,6 +14,7 @@ public:
   void add_resting_order(const Order &o);
 
   bool cancel_order(long long order_id);
+  std::optional<Order> find_order(long long order_id) const;
 
   std::optional<int> best_bid() const;
   std::optional<int> best_ask() const;

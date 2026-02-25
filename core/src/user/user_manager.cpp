@@ -64,33 +64,63 @@ void UserManager::on_fill(long long maker_order_id, long long taker_order_id,
 
     // Taker is buying → maker is selling
     if (taker_side == Side::Buy) {
-        // Taker bought: pays cash, receives shares
-        positions_[taker_user].cash   -= value;
-        positions_[taker_user].shares += qty;
-        positions_[taker_user].net_qty += qty;
-        positions_[taker_user].total_buy_qty += qty;
+        // Taker bought: pays balance, receives shares
+        positions_[taker_user].balance  -= value;
+        positions_[taker_user].shares   += qty;
+        positions_[taker_user].net_qty  += qty;
+        positions_[taker_user].total_buy_qty   += qty;
         positions_[taker_user].total_buy_value += value;
 
-        // Maker sold: receives cash, gives up shares
-        positions_[maker_user].cash   += value;
-        positions_[maker_user].shares -= qty;
-        positions_[maker_user].net_qty -= qty;
-        positions_[maker_user].total_sell_qty += qty;
+        // Maker sold: receives balance, gives up shares + releases reserved_shares
+        positions_[maker_user].balance          += value;
+        positions_[maker_user].shares           -= qty;
+        positions_[maker_user].reserved_shares  -= qty;
+        positions_[maker_user].net_qty          -= qty;
+        positions_[maker_user].total_sell_qty   += qty;
         positions_[maker_user].total_sell_value += value;
     } else {
-        // Taker sold: receives cash, gives up shares
-        positions_[taker_user].cash   += value;
-        positions_[taker_user].shares -= qty;
-        positions_[taker_user].net_qty -= qty;
-        positions_[taker_user].total_sell_qty += qty;
+        // Taker sold: receives balance, gives up shares
+        positions_[taker_user].balance  += value;
+        positions_[taker_user].shares   -= qty;
+        positions_[taker_user].net_qty  -= qty;
+        positions_[taker_user].total_sell_qty   += qty;
         positions_[taker_user].total_sell_value += value;
 
-        // Maker bought: pays cash, receives shares
-        positions_[maker_user].cash   -= value;
-        positions_[maker_user].shares += qty;
-        positions_[maker_user].net_qty += qty;
-        positions_[maker_user].total_buy_qty += qty;
-        positions_[maker_user].total_buy_value += value;
+        // Maker bought: pays balance + releases reserved_balance, receives shares
+        positions_[maker_user].balance           -= value;
+        positions_[maker_user].reserved_balance  -= value;
+        positions_[maker_user].shares            += qty;
+        positions_[maker_user].net_qty           += qty;
+        positions_[maker_user].total_buy_qty     += qty;
+        positions_[maker_user].total_buy_value   += value;
+    }
+}
+
+void UserManager::on_order_resting(long long order_id, Side side, int price, long long qty)
+{
+    std::lock_guard<std::mutex> lk(mtx_);
+    auto it = order_to_user_.find(order_id);
+    if (it == order_to_user_.end()) return;
+    long long user_id = it->second;
+
+    if (side == Side::Buy) {
+        positions_[user_id].reserved_balance += static_cast<long long>(price) * qty;
+    } else {
+        positions_[user_id].reserved_shares += qty;
+    }
+}
+
+void UserManager::on_cancel(long long order_id, Side side, int price, long long remaining_qty)
+{
+    std::lock_guard<std::mutex> lk(mtx_);
+    auto it = order_to_user_.find(order_id);
+    if (it == order_to_user_.end()) return;
+    long long user_id = it->second;
+
+    if (side == Side::Buy) {
+        positions_[user_id].reserved_balance -= static_cast<long long>(price) * remaining_qty;
+    } else {
+        positions_[user_id].reserved_shares -= remaining_qty;
     }
 }
 

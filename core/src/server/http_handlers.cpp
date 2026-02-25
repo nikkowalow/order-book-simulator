@@ -332,8 +332,10 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
 
             std::ostringstream oss;
             oss << "{\"userId\":" << uid
-                << ",\"cash\":" << pos.cash
+                << ",\"balance\":" << pos.balance
+                << ",\"reservedBalance\":" << pos.reserved_balance
                 << ",\"shares\":" << pos.shares
+                << ",\"reservedShares\":" << pos.reserved_shares
                 << ",\"netQty\":" << pos.net_qty
                 << ",\"totalBuyQty\":" << pos.total_buy_qty
                 << ",\"totalSellQty\":" << pos.total_sell_qty

@@ -56,11 +56,13 @@ PreflightResult MatchingEngine::preflight_check(const Order& order)
                 ? order.price
                 : *book_.best_ask();
             long long required = static_cast<long long>(cost_price) * order.qty;
-            if (pos.cash < required) {
+            long long available = pos.balance - pos.reserved_balance;
+            if (available < required) {
                 return PreflightResult::rejected("insufficient cash");
             }
         } else {
-            if (pos.shares < order.qty) {
+            long long available = pos.shares - pos.reserved_shares;
+            if (available < order.qty) {
                 return PreflightResult::rejected("insufficient shares");
             }
         }
@@ -147,6 +149,9 @@ OrderResult MatchingEngine::process_order(const Order &incoming)
     if (taker.type == OrderType::Limit && taker.qty > 0)
     {
         book_.add_resting_order(taker);
+        if (user_manager_) {
+            user_manager_->on_order_resting(taker.id, taker.side, taker.price, taker.qty);
+        }
     }
 
     emit_trades(trades, trade_sink_);
@@ -287,11 +292,16 @@ long long MatchingEngine::next_order_id() {
 }
 
 bool MatchingEngine::cancel_order(long long order_id) {
+    auto order = book_.find_order(order_id);
+
     bool ok = book_.cancel_order(order_id);
     if (ok) {
         long long batch_id = batch_seq_.fetch_add(1, std::memory_order_relaxed);
         long long user_id = user_manager_ ? user_manager_->get_user_for_order(order_id) : 0;
         emit_order_event(batch_id, order_id, user_id, OrderStatus::Canceled, Side::Buy, 0, 0, 0);
+        if (user_manager_ && order.has_value()) {
+            user_manager_->on_cancel(order_id, order->side, order->price, order->qty);
+        }
         book_.notify_change();
     }
     return ok;

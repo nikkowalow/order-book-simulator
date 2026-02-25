@@ -106,6 +106,12 @@ bool OrderBook::cancel_order(long long order_id) {
   return true;
 }
 
+std::optional<Order> OrderBook::find_order(long long order_id) const {
+  auto it = index_.find(order_id);
+  if (it == index_.end()) return std::nullopt;
+  return *(it->second.it);
+}
+
 std::optional<int> OrderBook::best_bid() const {
   if (bids_.empty())
     return std::nullopt;
