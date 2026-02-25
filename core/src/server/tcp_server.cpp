@@ -15,6 +15,7 @@
 #include <logging/journal_order_sink.hpp>
 #include <logging/journal_trade_sink.hpp>
 #include <market_maker/market_maker.hpp>
+#include <market_maker/trading_bots.hpp>
 #include <server/book_serializer.hpp>
 #include <server/http_handlers.hpp>
 #include <server/ws_server.hpp>
@@ -60,6 +61,9 @@ int main(int argc, char **argv) {
 
   MarketMaker mm(book, engine, book_mtx);
   //   mm.start();
+
+  TradingBots bots(book, engine, book_mtx);
+  bots.start();
 
   httplib::Server http;
   register_http_routes(http, book, engine, book_mtx, &mm, &user_manager);

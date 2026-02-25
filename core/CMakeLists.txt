@@ -46,6 +46,7 @@ add_executable(tcp_server
     src/logging/journal_trade_sink.cpp
     src/logging/journal_order_sink.cpp
     src/market_maker/market_maker.cpp
+    src/market_maker/trading_bots.cpp
 )
 
 target_include_directories(tcp_server PRIVATE

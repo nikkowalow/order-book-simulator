@@ -37,14 +37,14 @@ private:
   int ask_px_{0};
 
   // params (tune freely)
+  int anchor_px_{100};        // fallback mid when book is empty
   int spread_{2};
   int maker_qty_{50};
   int taker_qty_{20};
 
-  int maker_interval_ms_{5};
-  int taker_interval_ms_{50};
+  int maker_interval_ms_{350};
+  int taker_interval_ms_{350};
 
   int target_depth_{2000};
   int min_depth_{1000};
-  int max_depth_{4000};
 };
