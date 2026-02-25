@@ -48,6 +48,24 @@ PreflightResult MatchingEngine::preflight_check(const Order& order)
         }
     }
 
+    if (user_manager_ && order.user_id > 0) {
+        Position pos = user_manager_->get_position(order.user_id);
+
+        if (order.side == Side::Buy) {
+            int cost_price = (order.type == OrderType::Limit)
+                ? order.price
+                : *book_.best_ask();
+            long long required = static_cast<long long>(cost_price) * order.qty;
+            if (pos.cash < required) {
+                return PreflightResult::rejected("insufficient cash");
+            }
+        } else {
+            if (pos.shares < order.qty) {
+                return PreflightResult::rejected("insufficient shares");
+            }
+        }
+    }
+
     return PreflightResult::ok();
 }
 

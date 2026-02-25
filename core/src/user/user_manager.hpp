@@ -10,8 +10,8 @@
 #include "types/types.hpp"
 
 struct Position {
-    long long cash = 1000;          // starting cash balance
-    long long shares = 10;          // starting asset quantity
+    long long cash = 1000;
+    long long shares = 10;
     long long net_qty = 0;
     long long total_buy_qty = 0;
     long long total_sell_qty = 0;
