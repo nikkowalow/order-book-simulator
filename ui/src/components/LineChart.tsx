@@ -39,7 +39,6 @@ export default function LineChart({
           let path = `M${toX(0).toFixed(1)},${toY(data[0]).toFixed(1)}`;
 
           for (let i = 1; i < n; i++) {
-            const prevX = toX(i - 1);
             const prevY = toY(data[i - 1]);
             const currX = toX(i);
             const currY = toY(data[i]);

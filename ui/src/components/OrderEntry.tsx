@@ -76,7 +76,6 @@ export default function OrderEntry() {
       return;
     }
 
-    const t1 = performance.now();
     try {
       const { msg: data, rtt } = await send({ action: "cancel", id });
       setCancelLatencyMs(rtt);

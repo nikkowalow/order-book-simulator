@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <vector>
+#include <string>
 
 enum class Side
 {

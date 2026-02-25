@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
 import LineChart from "./LineChart";
 import { useAnalyticsStore } from "../stores/analyticsStore";
-
-const MAX_POINTS = 60;
 
 export default function Analytics() {
   const latencies = useAnalyticsStore((state) => state.latencies);
@@ -18,7 +15,6 @@ export default function Analytics() {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <div
         style={{
           padding: "6px 12px",
@@ -39,7 +35,6 @@ export default function Analytics() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 14 }}></div>
       </div>
 
-      {/* Chart */}
       <div style={{ flex: 1, overflow: "hidden" }}>
         <LineChart data={latencies} color="rgb(74,222,128)" />
       </div>
