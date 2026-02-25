@@ -52,4 +52,5 @@ struct OrderResult {
     long long filled_qty;
     long long remaining_qty;
     std::vector<Trade> trades;
+    std::string reason; 
 };

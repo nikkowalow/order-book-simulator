@@ -109,6 +109,7 @@ OrderResult MatchingEngine::process_order(const Order &incoming)
     // Preflight validation
     PreflightResult preflight = preflight_check(incoming);
     if (!preflight.is_ok()) {
+        result.reason = preflight.reason;
         if (preflight.status == PreflightStatus::Rejected) {
             result.status = OrderStatus::Rejected;
             result.filled_qty = 0;

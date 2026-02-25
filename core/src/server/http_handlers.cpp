@@ -164,8 +164,11 @@ static const char* status_to_string(OrderStatus status) {
 std::string json_order_result(const OrderResult& result) {
     std::ostringstream oss;
     oss << "{\"id\":" << result.id
-        << ",\"status\":\"" << status_to_string(result.status) << "\""
-        << ",\"originalQty\":" << result.original_qty
+        << ",\"status\":\"" << status_to_string(result.status) << "\"";
+    if (!result.reason.empty()) {
+        oss << ",\"error\":\"" << result.reason << "\"";
+    }
+    oss << ",\"originalQty\":" << result.original_qty
         << ",\"filledQty\":" << result.filled_qty
         << ",\"remainingQty\":" << result.remaining_qty
         << ",\"trades\":[";

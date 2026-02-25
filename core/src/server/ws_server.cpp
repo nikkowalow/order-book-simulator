@@ -247,11 +247,16 @@ std::string WsServer::process_message(const std::string& msg, long long user_id)
     std::string action = find_string("action");
     std::string request_id = find_string("requestId");
 
+    auto with_request_id = [&](std::string json) -> std::string {
+        if (request_id.empty()) return json;
+        return "{\"requestId\":\"" + request_id + "\"," + json.substr(1);
+    };
+
     if (action == "order")
     {
         OrderRequest req;
         if (!parse_order_json(msg, req))
-            return json_error("Invalid order");
+            return with_request_id(json_error("Invalid order"));
 
         long long id = engine_.next_order_id();
         Order o{.id = id, .user_id = user_id, .side = req.side,
@@ -263,17 +268,17 @@ std::string WsServer::process_message(const std::string& msg, long long user_id)
             result = engine_.process_order(o);
         }
 
-        return json_order_result(result);
+        return with_request_id(json_order_result(result));
     }
     else if (action == "cancel")
     {
         CancelRequest req;
         if (!parse_cancel_json(msg, req))
-            return json_error("Invalid cancel request");
+            return with_request_id(json_error("Invalid cancel request"));
 
         long long owner = user_manager_.get_user_for_order(req.id);
         if (owner != user_id)
-            return json_error("Not your order");
+            return with_request_id(json_error("Not your order"));
 
         bool ok;
         {
@@ -281,10 +286,10 @@ std::string WsServer::process_message(const std::string& msg, long long user_id)
             ok = engine_.cancel_order(req.id);
         }
 
-        return json_ok(ok);
+        return with_request_id(json_ok(ok));
     }
     else
     {
-        return json_error("Unknown action. Use 'order' or 'cancel'");
+        return with_request_id(json_error("Unknown action. Use 'order' or 'cancel'"));
     }
 }
