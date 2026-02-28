@@ -78,6 +78,15 @@ target_include_directories(ws_server PRIVATE
 target_link_libraries(ws_server PRIVATE Boost::boost)
 
 # ------------------------
+# Benchmark
+# ------------------------
+add_executable(bench
+    src/bench/bench.cpp
+)
+
+target_link_libraries(bench PRIVATE core)
+
+# ------------------------
 # Tests
 # ------------------------
 if(BUILD_TESTS)

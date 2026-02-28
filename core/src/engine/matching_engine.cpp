@@ -95,7 +95,7 @@ void MatchingEngine::emit_order_event(long long batch_id, long long order_id, lo
 OrderResult MatchingEngine::process_order(const Order &incoming)
 {
 
-    ScopedTimer timer("process_order");
+    // ScopedTimer timer("process_order");
 
     if (user_manager_) {
         user_manager_->register_order(incoming.id, incoming.user_id);
