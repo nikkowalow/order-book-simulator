@@ -15,13 +15,14 @@ static void emit_trades(std::vector<Trade>& trades, TradeSink* sink)
 {
     if (!sink) return;
 
-    for (auto& t : trades) {
-        t.seq = global_seq.fetch_add(1, std::memory_order_relaxed);
-        t.trade_id = global_trade_id.fetch_add(1, std::memory_order_relaxed);
-        t.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()
-        );
+    const auto batch_ts = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()
+    );
 
+    for (auto& t : trades) {
+        t.seq      = global_seq.fetch_add(1, std::memory_order_relaxed);
+        t.trade_id = global_trade_id.fetch_add(1, std::memory_order_relaxed);
+        t.timestamp = batch_ts;
         sink->on_trade(t);
     }
 }
@@ -86,7 +87,7 @@ void MatchingEngine::emit_order_event(long long batch_id, long long order_id, lo
     event.qty = qty;
     event.remaining_qty = remaining;
     event.timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::system_clock::now().time_since_epoch()
+        std::chrono::steady_clock::now().time_since_epoch()
     );
 
     order_sink_->on_order_event(event);
@@ -131,6 +132,7 @@ OrderResult MatchingEngine::process_order(const Order &incoming)
 
     Order taker = incoming;
     std::vector<Trade> trades;
+    trades.reserve(8); // avoid reallocation for typical fills
 
     if (taker.side == Side::Buy)
     {

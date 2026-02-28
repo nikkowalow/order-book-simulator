@@ -130,7 +130,8 @@ static std::vector<ns> bench_mixed(MatchingEngine &engine, int n) {
             std::uniform_int_distribution<size_t> pick(0, resting_ids.size() - 1);
             size_t idx = pick(rng);
             engine.cancel_order(resting_ids[idx]);
-            resting_ids.erase(resting_ids.begin() + static_cast<ptrdiff_t>(idx));
+            resting_ids[idx] = resting_ids.back();
+            resting_ids.pop_back();
         }
         samples.push_back(clk::now() - t0);
     }

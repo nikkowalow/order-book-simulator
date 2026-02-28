@@ -3,6 +3,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <memory_resource>
 #include <optional>
 #include <ostream>
 #include <unordered_map>
@@ -11,6 +12,15 @@
 
 class OrderBook {
 public:
+  // All list and map nodes come from a single unsynchronized pool resource
+  // owned by this book — no per-node malloc, no heap fragmentation.
+  using OrderList = std::pmr::list<Order>;
+
+  OrderBook()
+      : bids_(&pool_), asks_(&pool_), index_(&pool_) {
+    index_.reserve(1 << 17); // pre-reserve 131072 slots — no rehash up to ~115k orders
+  }
+
   void add_resting_order(const Order &o);
 
   bool cancel_order(long long order_id);
@@ -19,8 +29,8 @@ public:
   std::optional<int> best_bid() const;
   std::optional<int> best_ask() const;
 
-  std::list<Order> *best_bid_queue();
-  std::list<Order> *best_ask_queue();
+  OrderList *best_bid_queue();
+  OrderList *best_ask_queue();
 
   void cleanup_best_bid_level_if_empty();
   void cleanup_best_ask_level_if_empty();
@@ -39,9 +49,10 @@ public:
   }
 
 private:
-  ChangeCallback on_change_;
+  // Pool must be declared before any member that uses it.
+  std::pmr::unsynchronized_pool_resource pool_;
 
-  using OrderList = std::list<Order>;
+  ChangeCallback on_change_;
 
   struct Locator {
     Side side;
@@ -50,11 +61,11 @@ private:
   };
 
   // bids: high -> low
-  std::map<int, OrderList, std::greater<int>> bids_;
+  std::pmr::map<int, OrderList, std::greater<int>> bids_;
 
   // asks: low -> high
-  std::map<int, OrderList> asks_;
+  std::pmr::map<int, OrderList> asks_;
 
-  // order_id -> where it lives
-  std::unordered_map<long long, Locator> index_;
+  // order_id -> where it lives — pre-reserved to avoid rehash spikes
+  std::pmr::unordered_map<long long, Locator> index_;
 };

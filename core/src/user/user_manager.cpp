@@ -19,7 +19,7 @@ long long UserManager::next_user_id()
     {
         std::lock_guard<std::mutex> lk(journal_mtx_);
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()
+            std::chrono::steady_clock::now().time_since_epoch()
         );
         journal_
             << "{\"user_id\":" << id

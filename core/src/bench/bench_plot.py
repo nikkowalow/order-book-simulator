@@ -88,7 +88,7 @@ def plot_cdf(ax, df, scenarios, colors):
 
 def plot_percentile_curve(ax, df, scenarios, colors):
     """Latency vs percentile from p50 to p99.99 on a log x-axis."""
-    percentiles = np.linspace(50, 99.99, 500)
+    percentiles = np.linspace(50, 99, 500)
     for sc, color in zip(scenarios, colors):
         v = df.loc[df["scenario"] == sc, "latency_us"].values
         lat = np.percentile(v, percentiles)

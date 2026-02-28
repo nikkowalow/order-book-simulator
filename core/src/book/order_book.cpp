@@ -124,13 +124,13 @@ std::optional<int> OrderBook::best_ask() const {
   return asks_.begin()->first;
 }
 
-std::list<Order> *OrderBook::best_bid_queue() {
+std::pmr::list<Order> *OrderBook::best_bid_queue() {
   if (bids_.empty())
     return nullptr;
   return &bids_.begin()->second;
 }
 
-std::list<Order> *OrderBook::best_ask_queue() {
+std::pmr::list<Order> *OrderBook::best_ask_queue() {
   if (asks_.empty())
     return nullptr;
   return &asks_.begin()->second;
