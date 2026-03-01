@@ -1,3 +1,4 @@
+import { useLocation, Link } from "react-router-dom";
 import logo from "../assets/osmium.png";
 // import { useEffect, useState } from "react";
 // import { SERVER_URL } from "../config/config";
@@ -39,7 +40,13 @@ import logo from "../assets/osmium.png";
 //   );
 // }
 
+const TABS = [
+  { label: "Simulator", path: "/" },
+  { label: "Performance", path: "/performance" },
+];
+
 export default function Header() {
+  const { pathname } = useLocation();
   //     const [mmRunning, setMmRunning] = useState<boolean>(true);
 
   //   useEffect(() => {
@@ -74,9 +81,38 @@ export default function Header() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <img src={logo} alt="Logo" style={{ height: 28, width: 28 }} />
-        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: 0.5 }}>
+        {/* <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: 0.5 }}>
           Order Book Simulator
-        </span>
+        </span> */}
+      </div>
+
+      {/* Center tabs */}
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        {TABS.map(({ label, path }) => {
+          const active = pathname === path;
+          return (
+            <Link
+              key={path}
+              to={path}
+              style={{
+                padding: "5px 14px",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: active ? 600 : 400,
+                letterSpacing: "0.02em",
+                textDecoration: "none",
+                color: active
+                  ? "rgba(255,255,255,0.9)"
+                  : "rgba(255,255,255,0.4)",
+                background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                border: `1px solid ${active ? "rgba(255,255,255,0.15)" : "transparent"}`,
+                transition: "all 0.15s",
+              }}
+            >
+              {label}
+            </Link>
+          );
+        })}
       </div>
 
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>

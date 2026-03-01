@@ -9,6 +9,7 @@ import Header from "./components/Header";
 import AdminPage from "./pages/AdminPage";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import ViewportGate from "./components/ViewportGate";
+import PerformanceAnalytics from "./pages/PerformanceAnalytics";
 
 function Dashboard() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/components" element={<AdminPage />} />
+            <Route path="/performance" element={<PerformanceAnalytics />} />
           </Routes>
         </ViewportGate>
       </WebSocketProvider>
