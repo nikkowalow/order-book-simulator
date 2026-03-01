@@ -238,18 +238,18 @@ int main(int argc, char **argv) {
 
     std::printf("\n");
 
-    // auto run_sweep = [&](const char *label, int levels, int qty_per_level) {
-    //     { OrderBook wb; seed_book(wb, 100, 2, 20, 5000, 5000); MatchingEngine we(wb);
-    //       bench_market_sweep(we, WARMUP, levels, qty_per_level); }
-    //     OrderBook mb; seed_book(mb, 100, 2, 20, 5000, 5000); MatchingEngine me(mb);
-    //     auto samples = bench_market_sweep(me, N, levels, qty_per_level);
-    //     print_results(label, samples);
-    //     all_results.emplace_back(label, std::move(samples));
-    // };
+    auto run_sweep = [&](const char *label, int levels, int qty_per_level) {
+        { OrderBook wb; seed_book(wb, 100, 2, 20, 5000, 5000); MatchingEngine we(wb);
+          bench_market_sweep(we, WARMUP, levels, qty_per_level); }
+        OrderBook mb; seed_book(mb, 100, 2, 20, 5000, 5000); MatchingEngine me(mb);
+        auto samples = bench_market_sweep(me, N, levels, qty_per_level);
+        print_results(label, samples);
+        all_results.emplace_back(label, std::move(samples));
+    };
 
-    // run_sweep("mkt sweep  3 levels",  3, 500);
-    // run_sweep("mkt sweep 10 levels", 10, 500);
-    // run_sweep("mkt sweep 20 levels", 20, 500);
+    run_sweep("mkt sweep  3 levels",  3, 500);
+    run_sweep("mkt sweep 10 levels", 10, 500);
+    run_sweep("mkt sweep 20 levels", 20, 500);
 
     std::printf("\n  All latencies in microseconds (µs).\n");
 
