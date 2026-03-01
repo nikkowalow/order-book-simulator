@@ -26,15 +26,17 @@ static double pct(std::vector<ns> &v, double p) {
     return static_cast<double>(v[idx].count()) / 1000.0; // ns -> µs
 }
 
-static void print_results(const char *label, std::vector<ns> &samples) {
-    std::sort(samples.begin(), samples.end());
+static void print_results(const char *label, const std::vector<ns> &samples) {
+    // Sort a local copy — the original stays in insertion order for the CSV.
+    std::vector<ns> sorted = samples;
+    std::sort(sorted.begin(), sorted.end());
     double avg = static_cast<double>(
-                     std::accumulate(samples.begin(), samples.end(), ns{0}).count())
-                 / static_cast<double>(samples.size()) / 1000.0;
+                     std::accumulate(sorted.begin(), sorted.end(), ns{0}).count())
+                 / static_cast<double>(sorted.size()) / 1000.0;
 
     std::printf("  %-24s  n=%-6zu  avg=%7.3f µs  p50=%7.3f µs  p90=%7.3f µs  p99=%7.3f µs  max=%7.3f µs\n",
-                label, samples.size(), avg,
-                pct(samples, 50), pct(samples, 90), pct(samples, 99), pct(samples, 100));
+                label, sorted.size(), avg,
+                pct(sorted, 50), pct(sorted, 90), pct(sorted, 99), pct(sorted, 100));
 }
 
 static void write_csv(const std::string &path,
@@ -107,6 +109,49 @@ static std::vector<ns> bench_cancel(MatchingEngine &engine, int n) {
     return samples;
 }
 
+static std::vector<ns> bench_resting_capped(MatchingEngine &engine, int n) {
+    constexpr int MAX_DEPTH = 20000;
+
+    std::mt19937 rng{42};
+    std::uniform_int_distribution<int> qty_dist(1, 50);
+
+    std::vector<long long> active_ids;
+    active_ids.reserve(MAX_DEPTH);
+
+    std::vector<ns> samples;
+    samples.reserve(n);
+
+    for (int i = 0; i < n; ++i) {
+
+        // If we've hit max depth, cancel oldest order
+        if (static_cast<int>(active_ids.size()) >= MAX_DEPTH) {
+            long long oldest = active_ids.front();
+            engine.cancel_order(oldest);
+
+            // O(1) erase from front
+            active_ids.front() = active_ids.back();
+            active_ids.pop_back();
+        }
+
+        long long id = engine.next_order_id();
+        Order o{
+            .id = id,
+            .side = Side::Buy,
+            .price = 90,
+            .qty = qty_dist(rng),
+            .type = OrderType::Limit
+        };
+
+        auto t0 = clk::now();
+        engine.process_order(o);
+        samples.push_back(clk::now() - t0);
+
+        active_ids.push_back(id);
+    }
+
+    return samples;
+}
+
 static std::vector<ns> bench_mixed(MatchingEngine &engine, int n) {
     std::mt19937 rng{44};
     std::uniform_int_distribution<int> qty_dist(1, 30);
@@ -173,7 +218,7 @@ static std::vector<ns> run_scenario(const char *label, Fn fn, int warmup, int n)
 
 int main(int argc, char **argv) {
     constexpr int WARMUP = 5000;
-    constexpr int N      = 100000;
+    constexpr int N      = 50000;
     const std::string csv_path = (argc >= 2) ? argv[1] : "../bench_output//bench_results.csv";
 
     std::printf("\nOrder Book Matching Engine — Latency Benchmark\n");
@@ -193,14 +238,14 @@ int main(int argc, char **argv) {
 
     std::printf("\n");
 
-    auto run_sweep = [&](const char *label, int levels, int qty_per_level) {
-        { OrderBook wb; seed_book(wb, 100, 2, 20, 5000, 5000); MatchingEngine we(wb);
-          bench_market_sweep(we, WARMUP, levels, qty_per_level); }
-        OrderBook mb; seed_book(mb, 100, 2, 20, 5000, 5000); MatchingEngine me(mb);
-        auto samples = bench_market_sweep(me, N, levels, qty_per_level);
-        print_results(label, samples);
-        all_results.emplace_back(label, std::move(samples));
-    };
+    // auto run_sweep = [&](const char *label, int levels, int qty_per_level) {
+    //     { OrderBook wb; seed_book(wb, 100, 2, 20, 5000, 5000); MatchingEngine we(wb);
+    //       bench_market_sweep(we, WARMUP, levels, qty_per_level); }
+    //     OrderBook mb; seed_book(mb, 100, 2, 20, 5000, 5000); MatchingEngine me(mb);
+    //     auto samples = bench_market_sweep(me, N, levels, qty_per_level);
+    //     print_results(label, samples);
+    //     all_results.emplace_back(label, std::move(samples));
+    // };
 
     // run_sweep("mkt sweep  3 levels",  3, 500);
     // run_sweep("mkt sweep 10 levels", 10, 500);

@@ -77,7 +77,7 @@ def plot_cdf(ax, df, scenarios, colors):
         v = np.sort(df.loc[df["scenario"] == sc, "latency_us"].values)
         cdf = np.arange(1, len(v) + 1) / len(v)
         ax.plot(v, cdf, linewidth=1.4, color=color, label=sc)
-        global_max = max(global_max, np.percentile(v, 99.9))
+        global_max = max(global_max, np.percentile(v, 99))
     ax.set_xlim(0, global_max)
     ax.set_ylim(0, 1.02)
     ax.set_xlabel("Latency (µs)")
@@ -103,17 +103,30 @@ def plot_percentile_curve(ax, df, scenarios, colors):
 
 
 def plot_latency_vs_index(ax, df, scenarios, colors):
-    """Raw latency over order index — reveals warm-up drift or spikes."""
+    """Latency vs index with extreme tail filtered (above p99.9 removed)."""
+
     STRIDE = max(1, len(df.loc[df["scenario"] == scenarios[0]]) // 2000)
+
     for sc, color in zip(scenarios, colors):
         v = df.loc[df["scenario"] == sc, "latency_us"].values
         idx = np.arange(len(v))
-        # thin the data for readability
-        ax.plot(idx[::STRIDE], v[::STRIDE], linewidth=0.6, alpha=0.7,
-                color=color, label=sc)
+
+        # compute cutoff
+        cutoff = np.percentile(v, 99.9)
+
+        # mask out extreme spikes
+        mask = v <= cutoff
+
+        ax.plot(idx[mask][::STRIDE],
+                v[mask][::STRIDE],
+                linewidth=0.6,
+                alpha=0.8,
+                color=color,
+                label=sc)
+
     ax.set_xlabel("Order index")
     ax.set_ylabel("Latency (µs)")
-    ax.set_title("Latency vs Order Index")
+    ax.set_title("Latency vs Order Index (≤ p99.9)")
     ax.legend(loc="upper right")
 
 
@@ -132,33 +145,36 @@ def plot_tail_zoom(ax, df, scenarios, colors):
 
 
 def plot_percentile_bars(ax, summary, colors):
-    """Side-by-side bar chart of p50 / p90 / p99 per scenario."""
+    """Side-by-side bar chart of avg / p50 / p90 / p99 per scenario."""
     x     = np.arange(len(summary))
-    width = 0.25
+    width = 0.18
+    avg = summary["avg (µs)"].astype(float).values
     p50 = summary["p50 (µs)"].astype(float).values
     p90 = summary["p90 (µs)"].astype(float).values
     p99 = summary["p99 (µs)"].astype(float).values
 
-    bars50 = ax.bar(x - width, p50, width, label="p50", color="#3fb950", alpha=0.85)
-    bars90 = ax.bar(x,         p90, width, label="p90", color="#ffa657", alpha=0.85)
-    bars99 = ax.bar(x + width, p99, width, label="p99", color="#f78166", alpha=0.85)
+    offsets = [-1.5, -0.5, 0.5, 1.5]
+    bars_avg = ax.bar(x + offsets[0] * width, avg, width, label="avg", color="#79c0ff", alpha=0.85)
+    bars50   = ax.bar(x + offsets[1] * width, p50, width, label="p50", color="#3fb950", alpha=0.85)
+    bars90   = ax.bar(x + offsets[2] * width, p90, width, label="p90", color="#ffa657", alpha=0.85)
+    bars99   = ax.bar(x + offsets[3] * width, p99, width, label="p99", color="#f78166", alpha=0.85)
 
-    for bars in (bars50, bars90, bars99):
+    for bars in (bars_avg, bars50, bars90, bars99):
         for bar in bars:
             h = bar.get_height()
             ax.text(bar.get_x() + bar.get_width() / 2, h + 0.02,
-                    f"{h:.2f}", ha="center", va="bottom", fontsize=6.5, color="#8b949e")
+                    f"{h:.2f}", ha="center", va="bottom", fontsize=6, color="#8b949e")
 
     ax.set_xticks(x)
     ax.set_xticklabels(summary["Scenario"].values, rotation=22, ha="right", fontsize=7.5)
     ax.set_ylabel("Latency (µs)")
-    ax.set_title("p50 / p90 / p99 by Scenario")
+    ax.set_title("avg / p50 / p90 / p99 by Scenario")
     ax.legend()
 
 
 def plot_violin(ax, df, scenarios, colors):
     data    = [df.loc[df["scenario"] == sc, "latency_us"].values for sc in scenarios]
-    clipped = [np.clip(d, 0, np.percentile(d, 90)) for d in data]
+    clipped = [np.clip(d, 0, np.percentile(d, 99)) for d in data]
 
     parts = ax.violinplot(clipped, positions=range(len(scenarios)),
                           showmedians=True, showextrema=False)
@@ -204,21 +220,47 @@ def plot_table(ax, summary):
 
 # ---------------------------------------------------------------------------
 
+SAVEFIG_KWARGS = dict(dpi=150, bbox_inches="tight")
+
+def save_single(name, plot_fn, out_dir, *args, **kwargs):
+    """Render one plot function into its own full-size figure and save it."""
+    fig, ax = plt.subplots(figsize=(14, 8))
+    fig.patch.set_facecolor("#0f1117")
+    plot_fn(ax, *args, **kwargs)
+    path = out_dir / f"{name}.png"
+    fig.savefig(path, facecolor=fig.get_facecolor(), **SAVEFIG_KWARGS)
+    plt.close(fig)
+    print(f"  {path}")
+
+
+def save_table_single(out_dir, summary):
+    """Table needs a taller figure to breathe."""
+    fig, ax = plt.subplots(figsize=(14, 4))
+    fig.patch.set_facecolor("#0f1117")
+    plot_table(ax, summary)
+    path = out_dir / "bench_table.png"
+    fig.savefig(path, facecolor=fig.get_facecolor(), **SAVEFIG_KWARGS)
+    plt.close(fig)
+    print(f"  {path}")
+
+
 def main():
     csv_path = sys.argv[1] if len(sys.argv) > 1 else "core/bench_output/bench_results.csv"
-    out_path = sys.argv[2] if len(sys.argv) > 2 else "core/bench/bench_report.png"
+    out_path = sys.argv[2] if len(sys.argv) > 2 else "core/bench/bench_overview.png"
 
     if not pathlib.Path(csv_path).exists():
         print(f"Error: {csv_path} not found. Run ./bench first.")
         sys.exit(1)
 
-    pathlib.Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    out_dir = pathlib.Path(out_path).parent
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     df        = load(csv_path)
     scenarios = list(dict.fromkeys(df["scenario"]))
     colors    = [ACCENT_COLORS[i % len(ACCENT_COLORS)] for i in range(len(scenarios))]
     summary   = summary_stats(df)
 
+    # ── Overview (all panels in one figure) ─────────────────────────────────
     fig = plt.figure(figsize=(20, 18))
     fig.suptitle("Order Book Matching Engine — Benchmark Report",
                  fontsize=13, fontweight="bold", y=0.99, color="#e6edf3")
@@ -228,14 +270,25 @@ def main():
 
     plot_cdf(             fig.add_subplot(gs[0, 0]), df, scenarios, colors)
     plot_percentile_curve(fig.add_subplot(gs[0, 1]), df, scenarios, colors)
-    plot_latency_vs_index(fig.add_subplot(gs[1, 0]), df, scenarios, colors)
-    plot_tail_zoom(       fig.add_subplot(gs[1, 1]), df, scenarios, colors)
-    plot_percentile_bars( fig.add_subplot(gs[2, 0]), summary, colors)
-    plot_violin(          fig.add_subplot(gs[2, 1]), df, scenarios, colors)
+    plot_percentile_bars( fig.add_subplot(gs[1, 0]), summary, colors)
+    plot_violin(          fig.add_subplot(gs[1, 1]), df, scenarios, colors)
+    plot_latency_vs_index(fig.add_subplot(gs[2, 0]), df, scenarios, colors)
+    plot_tail_zoom(       fig.add_subplot(gs[2, 1]), df, scenarios, colors)
     plot_table(           fig.add_subplot(gs[3, :]), summary)
 
-    fig.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
-    print(f"Report saved to: {out_path}")
+    fig.savefig(out_path, facecolor=fig.get_facecolor(), **SAVEFIG_KWARGS)
+    plt.close(fig)
+    print(f"Overview saved to: {out_path}")
+
+    # ── Individual full-size exports ─────────────────────────────────────────
+    print("Individual panels:")
+    save_single("bench_cdf",             plot_cdf,              out_dir, df, scenarios, colors)
+    save_single("bench_percentile_curve",plot_percentile_curve, out_dir, df, scenarios, colors)
+    save_single("bench_percentile_bars", plot_percentile_bars,  out_dir, summary, colors)
+    save_single("bench_violin",          plot_violin,           out_dir, df, scenarios, colors)
+    save_single("bench_latency_vs_index",plot_latency_vs_index, out_dir, df, scenarios, colors)
+    save_single("bench_tail_zoom",       plot_tail_zoom,        out_dir, df, scenarios, colors)
+    save_table_single(out_dir, summary)
 
 
 if __name__ == "__main__":

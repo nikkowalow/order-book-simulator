@@ -87,6 +87,17 @@ add_executable(bench
 target_link_libraries(bench PRIVATE core)
 
 # ------------------------
+# Profile benchmark
+# ------------------------
+add_executable(bench_profile
+    src/bench/bench_profile.cpp
+    src/logging/journal_trade_sink.cpp
+    src/logging/journal_order_sink.cpp
+)
+
+target_link_libraries(bench_profile PRIVATE core)
+
+# ------------------------
 # Tests
 # ------------------------
 if(BUILD_TESTS)
