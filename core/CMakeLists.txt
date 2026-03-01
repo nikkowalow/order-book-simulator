@@ -9,6 +9,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Boost REQUIRED)
 
+option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
+
+if(ENABLE_COVERAGE)
+    message(STATUS "LLVM coverage enabled")
+
+    add_compile_options(
+        -fprofile-instr-generate
+        -fcoverage-mapping
+        -O0
+        -g
+    )
+
+    add_link_options(
+        -fprofile-instr-generate
+    )
+endif()
+
 # ------------------------
 # Core library
 # ------------------------
@@ -100,15 +117,39 @@ target_link_libraries(bench_profile PRIVATE core)
 # ------------------------
 # Tests
 # ------------------------
-if(BUILD_TESTS)
-    find_package(Catch2 3 REQUIRED)
+# if(BUILD_TESTS)
+find_package(Catch2 3 REQUIRED)
 
-    add_executable(tests
-        tests/test_main.cpp
+add_executable(tests
+    tests/test_main.cpp
 
-        # tests/test_matching_engine.cpp
-        # tests/test_order_book.cpp
+    # tests/test_matching_engine.cpp
+    # tests/test_order_book.cpp
+)
+
+target_link_libraries(tests PRIVATE core Catch2::Catch2WithMain)
+
+# endif()
+if(ENABLE_COVERAGE)
+    add_custom_target(coverage
+        COMMAND ${CMAKE_COMMAND} -E echo "Running tests with coverage..."
+
+        # Run tests with profile output
+        COMMAND LLVM_PROFILE_FILE=coverage.profraw $<TARGET_FILE:tests>
+
+        # Merge profile data
+        COMMAND xcrun llvm-profdata merge -sparse coverage.profraw -o coverage.profdata
+
+        # Generate HTML report
+        COMMAND xcrun llvm-cov show
+        $<TARGET_FILE:tests>
+        -instr-profile=coverage.profdata
+        -format=html
+        -output-dir=coverage_report
+
+        COMMAND ${CMAKE_COMMAND} -E echo "Coverage report generated at build/coverage_report/index.html"
+
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        DEPENDS tests
     )
-
-    target_link_libraries(tests PRIVATE core Catch2::Catch2WithMain)
 endif()

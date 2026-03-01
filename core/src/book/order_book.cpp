@@ -3,53 +3,6 @@
 #include <sstream>
 #include <string>
 
-struct InPlaceRenderer {
-  size_t last_lines = 0;
-
-  static size_t count_lines(const std::string &s) {
-    size_t n = 0;
-    for (char c : s)
-      if (c == '\n')
-        ++n;
-    if (!s.empty() && s.back() != '\n')
-      ++n;
-    return n;
-  }
-
-  // Move cursor up N lines (like repeated \033[F)
-  static void cursor_up_lines(size_t n) {
-    if (n == 0)
-      return;
-    std::cout << "\033[" << n << "F";
-  }
-
-  // Clear N lines starting at current cursor line, then return to start line
-  static void clear_lines(size_t n) {
-    for (size_t i = 0; i < n; ++i) {
-      std::cout << "\033[2K"; // clear entire line
-      if (i + 1 < n)
-        std::cout << "\n"; // go down to clear next line
-    }
-    // go back up to where we started
-    if (n > 1)
-      std::cout << "\033[" << (n - 1) << "F";
-  }
-
-  // Render text in-place
-  void draw(const std::string &frame) {
-    // go to start of previous frame
-    cursor_up_lines(last_lines);
-
-    // clear old frame area
-    clear_lines(last_lines);
-
-    // print new frame
-    std::cout << frame << std::flush;
-
-    last_lines = count_lines(frame);
-  }
-};
-
 void OrderBook::add_resting_order(const Order &o) {
   if (o.qty <= 0)
     return;

@@ -17,7 +17,8 @@ jobs:
           sudo apt-get install -y \
             cmake \
             build-essential \
-            libboost-all-dev
+            libboost-all-dev \
+            lcov
 
       - name: Install Catch2 v3
         run: |
@@ -26,11 +27,34 @@ jobs:
           cmake --build /tmp/Catch2/build -j$(nproc)
           sudo cmake --install /tmp/Catch2/build
 
-      - name: Configure
-        run: cmake -B build -S core -DBUILD_TESTS=ON
+      - name: Configure (with coverage)
+        run: |
+          cmake -B build -S core \
+            -DENABLE_COVERAGE=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="--coverage -O0 -g" \
+            -DCMAKE_C_FLAGS="--coverage -O0 -g"
 
       - name: Build
         run: cmake --build build -j$(nproc)
 
       - name: Run tests
         run: ./build/tests
+
+      - name: Generate coverage
+        run: |
+          lcov --capture \
+               --directory build \
+               --output-file coverage.info
+
+          lcov --remove coverage.info \
+               '/usr/*' \
+               '*/tests/*' \
+               --output-file coverage_filtered.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage_filtered.info
+          fail_ci_if_error: true

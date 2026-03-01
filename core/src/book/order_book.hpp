@@ -12,13 +12,11 @@
 
 class OrderBook {
 public:
-  // All list and map nodes come from a single unsynchronized pool resource
-  // owned by this book — no per-node malloc, no heap fragmentation.
   using OrderList = std::pmr::list<Order>;
 
   OrderBook()
       : bids_(&pool_), asks_(&pool_), index_(&pool_) {
-    index_.reserve(1 << 17); // pre-reserve 131072 slots — no rehash up to ~115k orders
+    index_.reserve(1 << 17); 
   }
 
   void add_resting_order(const Order &o);
