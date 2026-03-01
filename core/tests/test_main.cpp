@@ -2,6 +2,7 @@
 #include <catch2/catch_all.hpp>
 #include <book/order_book.hpp>
 #include <engine/matching_engine.hpp>
+#include <engine/multi_trade_sink.hpp>
 #include <user/user_manager.hpp>
 
 // Helper to make limit orders concise
@@ -897,6 +898,20 @@ TEST_CASE("Cancel via engine releases reserved shares") {
     REQUIRE(um.get_position(uid).reserved_shares == 0);
 }
 
+// ============================================================
+// Spy sinks for sink callback tests
+// ============================================================
+
+struct SpyTradeSink : TradeSink {
+    std::vector<Trade> trades;
+    void on_trade(const Trade& t) override { trades.push_back(t); }
+};
+
+struct SpyOrderSink : OrderSink {
+    std::vector<OrderEvent> events;
+    void on_order_event(const OrderEvent& e) override { events.push_back(e); }
+};
+
 TEST_CASE("net_qty and trade counters track across multiple fills") {
     OrderBook book;
     UserManager um("/dev/null");
@@ -920,4 +935,321 @@ TEST_CASE("net_qty and trade counters track across multiple fills") {
     REQUIRE(pos.total_sell_qty == 5);
     REQUIRE(pos.total_buy_value  == 1000);
     REQUIRE(pos.total_sell_value == 450);
+}
+
+// ============================================================
+// TradeSink tests
+// ============================================================
+
+TEST_CASE("TradeSink: not called when order rests with no fill") {
+    OrderBook book;
+    SpyTradeSink spy;
+    MatchingEngine engine(book, &spy);
+
+    engine.process_order(limit_buy(1, 100, 5));
+
+    REQUIRE(spy.trades.empty());
+}
+
+TEST_CASE("TradeSink: called once with correct fields on exact fill") {
+    OrderBook book;
+    SpyTradeSink spy;
+    MatchingEngine engine(book, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 5));
+    engine.process_order(limit_buy(2, 100, 5));
+
+    REQUIRE(spy.trades.size() == 1);
+    REQUIRE(spy.trades[0].maker_id == 1);
+    REQUIRE(spy.trades[0].taker_id == 2);
+    REQUIRE(spy.trades[0].price == 100);
+    REQUIRE(spy.trades[0].qty == 5);
+}
+
+TEST_CASE("TradeSink: called once per fill when sweeping multiple price levels") {
+    OrderBook book;
+    SpyTradeSink spy;
+    MatchingEngine engine(book, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 3));
+    book.add_resting_order(limit_sell(2, 101, 4));
+    book.add_resting_order(limit_sell(3, 102, 5));
+
+    engine.process_order(limit_buy(10, 102, 12));
+
+    REQUIRE(spy.trades.size() == 3);
+    REQUIRE(spy.trades[0].price == 100);
+    REQUIRE(spy.trades[0].qty == 3);
+    REQUIRE(spy.trades[1].price == 101);
+    REQUIRE(spy.trades[1].qty == 4);
+    REQUIRE(spy.trades[2].price == 102);
+    REQUIRE(spy.trades[2].qty == 5);
+}
+
+TEST_CASE("TradeSink: seq and trade_id are distinct across fills") {
+    OrderBook book;
+    SpyTradeSink spy;
+    MatchingEngine engine(book, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 3));
+    book.add_resting_order(limit_sell(2, 101, 3));
+    engine.process_order(limit_buy(10, 101, 6));
+
+    REQUIRE(spy.trades.size() == 2);
+    REQUIRE(spy.trades[0].seq != spy.trades[1].seq);
+    REQUIRE(spy.trades[0].trade_id != spy.trades[1].trade_id);
+}
+
+TEST_CASE("TradeSink: not called for rejected order") {
+    OrderBook book;
+    SpyTradeSink spy;
+    MatchingEngine engine(book, &spy);
+
+    engine.process_order(limit_buy(1, 100, 0)); // zero qty → rejected
+
+    REQUIRE(spy.trades.empty());
+}
+
+TEST_CASE("TradeSink: not called for canceled market order with no liquidity") {
+    OrderBook book;
+    SpyTradeSink spy;
+    MatchingEngine engine(book, &spy);
+
+    engine.process_order(market_buy(1, 10));
+
+    REQUIRE(spy.trades.empty());
+}
+
+TEST_CASE("TradeSink: maker_user_id and taker_user_id populated when user_manager present") {
+    OrderBook book;
+    SpyTradeSink spy;
+    UserManager um("/dev/null");
+    MatchingEngine engine(book, &spy, nullptr, &um);
+
+    long long seller = um.next_user_id();
+    long long buyer  = um.next_user_id();
+
+    engine.process_order(limit_sell_u(1, seller, 100, 5));
+    engine.process_order(limit_buy_u(2, buyer, 100, 5));
+
+    REQUIRE(spy.trades.size() == 1);
+    REQUIRE(spy.trades[0].maker_user_id == seller);
+    REQUIRE(spy.trades[0].taker_user_id == buyer);
+}
+
+// ============================================================
+// MultiTradeSink tests
+// ============================================================
+
+TEST_CASE("MultiTradeSink: fans out to all registered sinks") {
+    OrderBook book;
+    SpyTradeSink spy1, spy2;
+    MultiTradeSink multi;
+    multi.add_sink(&spy1);
+    multi.add_sink(&spy2);
+    MatchingEngine engine(book, &multi);
+
+    book.add_resting_order(limit_sell(1, 100, 5));
+    engine.process_order(limit_buy(2, 100, 5));
+
+    REQUIRE(spy1.trades.size() == 1);
+    REQUIRE(spy2.trades.size() == 1);
+    REQUIRE(spy1.trades[0].price == spy2.trades[0].price);
+    REQUIRE(spy1.trades[0].qty == spy2.trades[0].qty);
+}
+
+TEST_CASE("MultiTradeSink: empty sink list does not crash") {
+    OrderBook book;
+    MultiTradeSink multi;
+    MatchingEngine engine(book, &multi);
+
+    book.add_resting_order(limit_sell(1, 100, 5));
+    REQUIRE_NOTHROW(engine.process_order(limit_buy(2, 100, 5)));
+}
+
+// ============================================================
+// OrderSink tests
+// ============================================================
+
+TEST_CASE("OrderSink: rejected order emits single Rejected event without a prior New") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    engine.process_order(limit_buy(1, 100, 0)); // zero qty → rejected
+
+    REQUIRE(spy.events.size() == 1);
+    REQUIRE(spy.events[0].status == OrderStatus::Rejected);
+    REQUIRE(spy.events[0].order_id == 1);
+}
+
+TEST_CASE("OrderSink: canceled market order emits single Canceled event") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    engine.process_order(market_buy(1, 5)); // no asks → canceled
+
+    REQUIRE(spy.events.size() == 1);
+    REQUIRE(spy.events[0].status == OrderStatus::Canceled);
+    REQUIRE(spy.events[0].order_id == 1);
+}
+
+TEST_CASE("OrderSink: resting order emits New event with correct fields") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    engine.process_order(limit_buy(1, 100, 7));
+
+    REQUIRE(spy.events.size() == 1);
+    const auto& e = spy.events[0];
+    REQUIRE(e.status == OrderStatus::New);
+    REQUIRE(e.order_id == 1);
+    REQUIRE(e.side == Side::Buy);
+    REQUIRE(e.price == 100);
+    REQUIRE(e.qty == 7);
+    REQUIRE(e.remaining_qty == 7);
+}
+
+TEST_CASE("OrderSink: exact fill emits New(taker) Filled(maker) Filled(taker)") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 5));
+    engine.process_order(limit_buy(2, 100, 5));
+
+    REQUIRE(spy.events.size() == 3);
+
+    REQUIRE(spy.events[0].order_id == 2);
+    REQUIRE(spy.events[0].status == OrderStatus::New);
+
+    REQUIRE(spy.events[1].order_id == 1);
+    REQUIRE(spy.events[1].status == OrderStatus::Filled);
+    REQUIRE(spy.events[1].qty == 5);
+    REQUIRE(spy.events[1].remaining_qty == 0);
+
+    REQUIRE(spy.events[2].order_id == 2);
+    REQUIRE(spy.events[2].status == OrderStatus::Filled);
+    REQUIRE(spy.events[2].qty == 5);
+    REQUIRE(spy.events[2].remaining_qty == 0);
+}
+
+TEST_CASE("OrderSink: taker partial fill emits New(taker) Filled(maker) PartiallyFilled(taker)") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 3));
+    engine.process_order(limit_buy(2, 100, 10));
+
+    REQUIRE(spy.events.size() == 3);
+
+    REQUIRE(spy.events[0].order_id == 2);
+    REQUIRE(spy.events[0].status == OrderStatus::New);
+
+    REQUIRE(spy.events[1].order_id == 1);
+    REQUIRE(spy.events[1].status == OrderStatus::Filled);
+    REQUIRE(spy.events[1].qty == 3);
+    REQUIRE(spy.events[1].remaining_qty == 0);
+
+    REQUIRE(spy.events[2].order_id == 2);
+    REQUIRE(spy.events[2].status == OrderStatus::PartiallyFilled);
+    REQUIRE(spy.events[2].qty == 3);        // filled amount
+    REQUIRE(spy.events[2].remaining_qty == 7); // 10 - 3
+}
+
+TEST_CASE("OrderSink: maker partial fill emits PartiallyFilled for maker") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 10));
+    engine.process_order(limit_buy(2, 100, 4)); // fills 4 of maker's 10
+
+    // New(taker), PartiallyFilled(maker), Filled(taker)
+    REQUIRE(spy.events.size() == 3);
+
+    REQUIRE(spy.events[1].order_id == 1);
+    REQUIRE(spy.events[1].status == OrderStatus::PartiallyFilled);
+    REQUIRE(spy.events[1].qty == 4);
+    REQUIRE(spy.events[1].remaining_qty == 6);
+
+    REQUIRE(spy.events[2].order_id == 2);
+    REQUIRE(spy.events[2].status == OrderStatus::Filled);
+}
+
+TEST_CASE("OrderSink: cancel emits Canceled event for the canceled order") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    engine.process_order(limit_buy(1, 100, 5)); // rests → New emitted
+    spy.events.clear();
+
+    engine.cancel_order(1);
+
+    REQUIRE(spy.events.size() == 1);
+    REQUIRE(spy.events[0].order_id == 1);
+    REQUIRE(spy.events[0].status == OrderStatus::Canceled);
+}
+
+TEST_CASE("OrderSink: sequence numbers increase monotonically") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    engine.process_order(limit_buy(1, 100, 5));
+    engine.process_order(limit_buy(2, 99, 5));
+
+    REQUIRE(spy.events.size() == 2);
+    REQUIRE(spy.events[0].seq < spy.events[1].seq);
+}
+
+TEST_CASE("OrderSink: all events from one process_order share a batch_id") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 5));
+    engine.process_order(limit_buy(2, 100, 5)); // 3 events: New, Filled(maker), Filled(taker)
+
+    REQUIRE(spy.events.size() == 3);
+    long long bid = spy.events[0].batch_id;
+    REQUIRE(spy.events[1].batch_id == bid);
+    REQUIRE(spy.events[2].batch_id == bid);
+}
+
+TEST_CASE("OrderSink: different process_order calls produce different batch_ids") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    engine.process_order(limit_buy(1, 100, 5));
+    engine.process_order(limit_buy(2, 99, 5));
+
+    REQUIRE(spy.events.size() == 2);
+    REQUIRE(spy.events[0].batch_id != spy.events[1].batch_id);
+}
+
+TEST_CASE("OrderSink: sweeping two levels produces events for each maker and final taker Filled") {
+    OrderBook book;
+    SpyOrderSink spy;
+    MatchingEngine engine(book, nullptr, &spy);
+
+    book.add_resting_order(limit_sell(1, 100, 3));
+    book.add_resting_order(limit_sell(2, 101, 3));
+    engine.process_order(limit_buy(10, 101, 6)); // exact sweep of both levels
+
+    // New(taker), Filled(maker1), Filled(maker2), Filled(taker)
+    REQUIRE(spy.events.size() == 4);
+    REQUIRE(spy.events[0].order_id == 10);
+    REQUIRE(spy.events[0].status == OrderStatus::New);
+    REQUIRE(spy.events[1].order_id == 1);
+    REQUIRE(spy.events[1].status == OrderStatus::Filled);
+    REQUIRE(spy.events[2].order_id == 2);
+    REQUIRE(spy.events[2].status == OrderStatus::Filled);
+    REQUIRE(spy.events[3].order_id == 10);
+    REQUIRE(spy.events[3].status == OrderStatus::Filled);
 }
