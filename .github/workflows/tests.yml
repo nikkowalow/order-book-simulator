@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            build-essential \
+            libboost-all-dev
+
+      - name: Install Catch2 v3
+        run: |
+          git clone --depth 1 --branch v3.7.1 https://github.com/catchorg/Catch2.git /tmp/Catch2
+          cmake -S /tmp/Catch2 -B /tmp/Catch2/build -DBUILD_TESTING=OFF
+          cmake --build /tmp/Catch2/build -j$(nproc)
+          sudo cmake --install /tmp/Catch2/build
+
+      - name: Configure
+        run: cmake -B build -S core -DBUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run tests
+        run: ./build/tests
