@@ -1,5 +1,7 @@
 # Limit Order Book & Matching Engine Simulator
 
+[![CMake Compile](https://github.com/nikkowalow/order-book-simulator/actions/workflows/build.yml)](https://github.com/nikkowalow/order-book-simulator/actions/workflows/build.yml)
+
 A C++ implementation of a **price–time priority** limit order book and matching engine, exposing an HTTP REST API, a real-time WebSocket feed, and a React UI for visualizing order flow, market depth, and executed trades.
 
 This project models the core mechanics of modern electronic exchanges with an emphasis on determinism, correctness, and clean system boundaries.
@@ -109,10 +111,10 @@ The system follows a layered pipeline from client to order book to downstream si
 
 ### Server Ports
 
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 8080 | HTTP | REST API for order entry, queries, user management |
-| 9001 | WebSocket | Real-time trade and book state streaming |
+| Port | Protocol  | Purpose                                            |
+| ---- | --------- | -------------------------------------------------- |
+| 8080 | HTTP      | REST API for order entry, queries, user management |
+| 9001 | WebSocket | Real-time trade and book state streaming           |
 
 ---
 
@@ -276,12 +278,12 @@ private:
 
 ### Complexity
 
-| Operation | Complexity |
-|-----------|-----------|
-| `add_resting_order` | O(log n) map insert + O(1) list append |
-| `cancel_order` | O(1) index lookup + O(1) list erase |
-| `best_bid` / `best_ask` | O(1) map begin() |
-| `best_bid_queue` / `best_ask_queue` | O(1) |
+| Operation                           | Complexity                             |
+| ----------------------------------- | -------------------------------------- |
+| `add_resting_order`                 | O(log n) map insert + O(1) list append |
+| `cancel_order`                      | O(1) index lookup + O(1) list erase    |
+| `best_bid` / `best_ask`             | O(1) map begin()                       |
+| `best_bid_queue` / `best_ask_queue` | O(1)                                   |
 
 ### Key Methods
 
@@ -372,6 +374,7 @@ Rejected orders return an `OrderResult` with `status = Rejected` and a `reason` 
 ```
 
 **Price-time priority** is enforced by:
+
 - Sorted maps (best price always at `begin()`)
 - FIFO lists within each level (oldest order matched first)
 
@@ -404,6 +407,7 @@ All responses are JSON. All routes set CORS headers (`Access-Control-Allow-Origi
 Place a new order.
 
 **Request body:**
+
 ```json
 {
   "side": "BUY",
@@ -419,6 +423,7 @@ Place a new order.
 - `user_id` is optional; if present, balance is checked and position is updated
 
 **Response:**
+
 ```json
 {
   "id": 1042,
@@ -447,6 +452,7 @@ Place a new order.
 Cancel a resting order.
 
 **Request body:**
+
 ```json
 { "id": 1042 }
 ```
@@ -464,6 +470,7 @@ Returns `403` if `user_id` is provided but does not match the order owner.
 Returns the current order book snapshot up to 20 levels deep.
 
 **Response:**
+
 ```json
 {
   "type": "book_snapshot",
@@ -485,6 +492,7 @@ Returns the current order book snapshot up to 20 levels deep.
 Returns all resting orders in the book (flat list).
 
 **Response:**
+
 ```json
 {
   "type": "orders_update",
@@ -520,6 +528,7 @@ Allocates a new user and returns their ID.
 Returns the position snapshot for a user.
 
 **Response:**
+
 ```json
 {
   "user_id": 3,
@@ -602,6 +611,7 @@ Bidirectional message loop (per-client thread)
 The WebSocket server accepts order and cancel actions over the socket, identical in semantics to the HTTP endpoints.
 
 **Place an order:**
+
 ```json
 {
   "action": "order",
@@ -614,6 +624,7 @@ The WebSocket server accepts order and cancel actions over the socket, identical
 ```
 
 **Cancel an order:**
+
 ```json
 {
   "action": "cancel",
@@ -627,6 +638,7 @@ The `requestId` field is optional. If present, it is echoed back in the response
 ### Outgoing Messages (Server → Client)
 
 **Trade event** — broadcast to all connected clients whenever a trade executes:
+
 ```json
 {
   "type": "trade",
@@ -643,17 +655,19 @@ The `requestId` field is optional. If present, it is echoed back in the response
 ```
 
 **Book snapshot** — broadcast to all clients on every book mutation (any add/cancel/fill):
+
 ```json
 {
   "type": "book_snapshot",
   "payload": {
-    "bids": [ { "price": 99, "qty": 450, "orders": [200, 150, 100] } ],
-    "asks": [ { "price": 101, "qty": 500, "orders": [250, 250] } ]
+    "bids": [{ "price": 99, "qty": 450, "orders": [200, 150, 100] }],
+    "asks": [{ "price": 101, "qty": 500, "orders": [250, 250] }]
   }
 }
 ```
 
 **Orders update** — broadcast alongside book snapshot:
+
 ```json
 {
   "type": "orders_update",
@@ -664,6 +678,7 @@ The `requestId` field is optional. If present, it is echoed back in the response
 ```
 
 **Session message** — sent once on connect:
+
 ```json
 { "type": "session", "userId": 3, "reconnected": false }
 ```
@@ -693,7 +708,17 @@ All events are written to append-only JSON Lines (`.jsonl`) files. Each line is 
 Written by `JournalTradeSink` on every fill.
 
 ```json
-{"seq":14,"trade_id":7,"price":100,"qty":50,"maker":1001,"taker":1042,"maker_user":0,"taker_user":3,"ts":1700000000000000000}
+{
+  "seq": 14,
+  "trade_id": 7,
+  "price": 100,
+  "qty": 50,
+  "maker": 1001,
+  "taker": 1042,
+  "maker_user": 0,
+  "taker_user": 3,
+  "ts": 1700000000000000000
+}
 ```
 
 ### Order Event Journal (`orders.jsonl`)
@@ -701,7 +726,18 @@ Written by `JournalTradeSink` on every fill.
 Written by `JournalOrderSink` at each lifecycle transition: NEW → RESTING / PARTIAL_FILL / FILLED / CANCELLED / REJECTED.
 
 ```json
-{"seq":22,"batch_id":8,"order_id":1042,"user_id":3,"type":"FILLED","side":"BUY","price":100,"qty":50,"remaining_qty":0,"ts":1700000000000000000}
+{
+  "seq": 22,
+  "batch_id": 8,
+  "order_id": 1042,
+  "user_id": 3,
+  "type": "FILLED",
+  "side": "BUY",
+  "price": 100,
+  "qty": 50,
+  "remaining_qty": 0,
+  "ts": 1700000000000000000
+}
 ```
 
 The `batch_id` groups all events produced by a single `process_order()` call (NEW + any number of PARTIAL_FILL + FILLED/RESTING), enabling full reconstruction of any order's lifecycle.
@@ -728,17 +764,17 @@ This decouples the engine from any specific downstream consumer.
 
 Each user holds a `Position` struct:
 
-| Field | Description |
-|-------|-------------|
-| `balance` | Cash available (default 100,000) |
-| `reserved_balance` | Cash locked in resting BUY limit orders |
-| `shares` | Shares available (default 100) |
-| `reserved_shares` | Shares locked in resting SELL limit orders |
-| `net_qty` | Cumulative net share position |
-| `total_buy_qty` | Lifetime shares purchased |
-| `total_sell_qty` | Lifetime shares sold |
-| `total_buy_value` | Lifetime cash spent on buys |
-| `total_sell_value` | Lifetime cash received from sells |
+| Field              | Description                                |
+| ------------------ | ------------------------------------------ |
+| `balance`          | Cash available (default 100,000)           |
+| `reserved_balance` | Cash locked in resting BUY limit orders    |
+| `shares`           | Shares available (default 100)             |
+| `reserved_shares`  | Shares locked in resting SELL limit orders |
+| `net_qty`          | Cumulative net share position              |
+| `total_buy_qty`    | Lifetime shares purchased                  |
+| `total_sell_qty`   | Lifetime shares sold                       |
+| `total_buy_value`  | Lifetime cash spent on buys                |
+| `total_sell_value` | Lifetime cash received from sells          |
 
 ### Balance Lifecycle
 
@@ -782,12 +818,14 @@ All `UserManager` methods acquire an internal `std::mutex`. The `on_fill` and `o
 The market maker provides continuous two-sided liquidity. It runs two threads:
 
 **Maker thread** (350ms interval):
+
 1. Reads best bid and ask
 2. Computes mid-price (or falls back to `anchor_px = 100`)
 3. Posts a BUY limit at `mid - spread/2` and a SELL limit at `mid + spread/2`
 4. Only adds liquidity when current depth is below `target_depth` (2,000 qty per side)
 
 **Taker thread** (350ms interval):
+
 1. Checks bid and ask depth
 2. If both sides have at least `min_depth` (1,000):
    - Identifies the heavier side
@@ -802,6 +840,7 @@ The market maker can be toggled at runtime via `POST /market_maker/toggle`.
 Four independent bot strategies run as background threads:
 
 #### Momentum Bot (200ms)
+
 Maintains a sliding window of the last 8 mid-prices. If the 8-sample momentum exceeds ±2 ticks, it posts a limit order in the direction of the trend.
 
 ```
@@ -810,6 +849,7 @@ momentum <= -2 → SELL limit at best_bid, qty=10
 ```
 
 #### Mean-Reversion Bot (400ms)
+
 Tracks an EMA of mid-price (α=0.08). When the price deviates more than 2.5 ticks from the EMA, it fades the move with a passive limit order.
 
 ```
@@ -818,9 +858,11 @@ mid < EMA - 2.5 → BUY at EMA-1, qty=15
 ```
 
 #### Noise Bot (60–280ms random)
+
 Posts small random limit orders at random prices near the mid (±5 ticks, qty 1–8). Simulates retail flow and keeps the book active.
 
 #### Sniper Bot (150ms)
+
 Monitors the bid-ask spread. When spread ≥ 3 ticks, it places a BUY one tick inside the best ask and a SELL one tick inside the best bid, attempting to earn the spread.
 
 ```
@@ -837,14 +879,14 @@ All bot and market maker orders use `user_id = 0`, bypassing preflight balance c
 
 ### Locks
 
-| Lock | Scope | Held by |
-|------|-------|---------|
-| `book_mtx` | External mutex protecting `OrderBook` during mutation | HTTP routes, WebSocket handler, MarketMaker, TradingBots |
-| `UserManager::mtx_` | Protects `positions_` and `order_to_user_` | All UserManager public methods |
-| `JournalTradeSink::mtx_` | Serializes writes to `trades.jsonl` | `on_trade()` |
-| `JournalOrderSink::mtx_` | Serializes writes to `orders.jsonl` | `on_order_event()` |
-| `WsServer::clients_mtx_` | Protects client list during broadcast/removal | `broadcast()`, `remove_client()` |
-| `Client::write_mtx` | Prevents interleaved writes on a single client socket | `broadcast()`, `send_to_client()` |
+| Lock                     | Scope                                                 | Held by                                                  |
+| ------------------------ | ----------------------------------------------------- | -------------------------------------------------------- |
+| `book_mtx`               | External mutex protecting `OrderBook` during mutation | HTTP routes, WebSocket handler, MarketMaker, TradingBots |
+| `UserManager::mtx_`      | Protects `positions_` and `order_to_user_`            | All UserManager public methods                           |
+| `JournalTradeSink::mtx_` | Serializes writes to `trades.jsonl`                   | `on_trade()`                                             |
+| `JournalOrderSink::mtx_` | Serializes writes to `orders.jsonl`                   | `on_order_event()`                                       |
+| `WsServer::clients_mtx_` | Protects client list during broadcast/removal         | `broadcast()`, `remove_client()`                         |
+| `Client::write_mtx`      | Prevents interleaved writes on a single client socket | `broadcast()`, `send_to_client()`                        |
 
 ### Atomics
 
