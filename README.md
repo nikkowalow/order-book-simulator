@@ -1,6 +1,7 @@
 # Limit Order Book & Matching Engine Simulator
 
 [![CMake Compile](https://github.com/nikkowalow/order-book-simulator/actions/workflows/build.yml/badge.svg)](https://github.com/nikkowalow/order-book-simulator/actions/workflows/build.yml)
+[![Tests](https://github.com/nikkowalow/order-book-simulator/actions/workflows/tests.yml/badge.svg)](https://github.com/nikkowalow/order-book-simulator/actions/workflows/tests.yml)
 
 A C++ implementation of a **price–time priority** limit order book and matching engine, exposing an HTTP REST API, a real-time WebSocket feed, and a React UI for visualizing order flow, market depth, and executed trades.
 
