@@ -88,5 +88,6 @@ Distribution shape for each scenario clipped at p90 for readability. Narrow viol
 ---
 
 ### Summary Table
+<img width="1657" height="533" alt="bench_table" src="https://github.com/user-attachments/assets/0c62f011-f3d5-4bd0-a12b-ab605d09065c" />
 
 Full numeric summary for every scenario: sample count, mean, p50, p90, p99, and max. The max column reflects worst-case OS jitter rather than engine performance — all scenarios share a similar worst-case ceiling regardless of complexity.
