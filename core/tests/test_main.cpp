@@ -6,32 +6,32 @@
 
 // Helper to make limit orders concise
 static Order limit_buy(long long id, int price, long long qty) {
-    return Order{.id = id, .side = Side::Buy, .type = OrderType::Limit, .price = price, .qty = qty};
+    return Order{id, 0, Side::Buy, price, qty, OrderType::Limit};
 }
 
 static Order limit_sell(long long id, int price, long long qty) {
-    return Order{.id = id, .side = Side::Sell, .type = OrderType::Limit, .price = price, .qty = qty};
+    return Order{id, 0, Side::Sell, price, qty, OrderType::Limit};
 }
 
 static Order market_buy(long long id, long long qty) {
-    return Order{.id = id, .side = Side::Buy, .type = OrderType::Market, .price = 0, .qty = qty};
+    return Order{id, 0, Side::Buy, 0, qty, OrderType::Market};
 }
 
 static Order market_sell(long long id, long long qty) {
-    return Order{.id = id, .side = Side::Sell, .type = OrderType::Market, .price = 0, .qty = qty};
+    return Order{id, 0, Side::Sell, 0, qty, OrderType::Market};
 }
 
 // Helpers with user_id for UserManager tests
 static Order limit_buy_u(long long id, long long uid, int price, long long qty) {
-    return Order{.id = id, .user_id = uid, .side = Side::Buy, .type = OrderType::Limit, .price = price, .qty = qty};
+    return Order{id, uid, Side::Buy, price, qty, OrderType::Limit};
 }
 
 static Order limit_sell_u(long long id, long long uid, int price, long long qty) {
-    return Order{.id = id, .user_id = uid, .side = Side::Sell, .type = OrderType::Limit, .price = price, .qty = qty};
+    return Order{id, uid, Side::Sell, price, qty, OrderType::Limit};
 }
 
 static Order market_buy_u(long long id, long long uid, long long qty) {
-    return Order{.id = id, .user_id = uid, .side = Side::Buy, .type = OrderType::Market, .price = 0, .qty = qty};
+    return Order{id, uid, Side::Buy, 0, qty, OrderType::Market};
 }
 
 // ============================================================
@@ -512,7 +512,7 @@ TEST_CASE("OrderResult: Rejected for non-positive limit price") {
     OrderBook book;
     MatchingEngine engine(book);
 
-    auto result = engine.process_order(Order{.id=1, .side=Side::Buy, .type=OrderType::Limit, .price=0, .qty=5});
+    auto result = engine.process_order(Order{1, 0, Side::Buy, -99, 5, OrderType::Limit});
 
     REQUIRE(result.status == OrderStatus::Rejected);
     REQUIRE_FALSE(result.reason.empty());
