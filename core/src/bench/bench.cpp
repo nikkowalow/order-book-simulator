@@ -3,8 +3,11 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <numeric>
 #include <random>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -34,7 +37,7 @@ static void print_results(const char *label, const std::vector<ns> &samples) {
                      std::accumulate(sorted.begin(), sorted.end(), ns{0}).count())
                  / static_cast<double>(sorted.size()) / 1000.0;
 
-    std::printf("  %-24s  n=%-6zu  avg=%7.3f µs  p50=%7.3f µs  p90=%7.3f µs  p99=%7.3f µs  max=%7.3f µs\n",
+    std::fprintf(stderr, "  %-24s  n=%-6zu  avg=%7.3f µs  p50=%7.3f µs  p90=%7.3f µs  p99=%7.3f µs  max=%7.3f µs\n",
                 label, sorted.size(), avg,
                 pct(sorted, 50), pct(sorted, 90), pct(sorted, 99), pct(sorted, 100));
 }
@@ -49,7 +52,106 @@ static void write_csv(const std::string &path,
             f << label << ',' << static_cast<double>(s.count()) / 1000.0 << '\n';
         }
     }
-    std::printf("\n  CSV written to: %s\n", path.c_str());
+    std::fprintf(stderr, "\n  CSV written to: %s\n", path.c_str());
+}
+
+static void write_json(std::ostream &f,
+                       const std::vector<std::pair<std::string, std::vector<ns>>> &results) {
+    f << std::fixed << std::setprecision(3);
+
+    static const double kPcts[] = {1, 5, 10, 25, 50, 75, 90, 95, 99, 99.5, 99.9};
+    static const int kNumPcts   = static_cast<int>(sizeof(kPcts) / sizeof(kPcts[0]));
+
+    static const double kBuckets[] = {
+        0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 5.0,
+        10.0, 25.0, 50.0, 100.0, 250.0, 500.0
+    };
+    static const int kNumBuckets = static_cast<int>(sizeof(kBuckets) / sizeof(kBuckets[0]));
+
+    auto pct_val = [](const std::vector<double>& v, double p) -> double {
+        size_t idx = static_cast<size_t>(p / 100.0 * static_cast<double>(v.size()));
+        if (idx >= v.size()) idx = v.size() - 1;
+        return v[idx];
+    };
+
+    auto json_str = [](const std::string& s) -> std::string {
+        std::string out;
+        out.reserve(s.size() + 2);
+        out += '"';
+        for (char c : s) {
+            if (c == '"' || c == '\\') out += '\\';
+            out += c;
+        }
+        out += '"';
+        return out;
+    };
+
+    f << "{\n  \"scenarios\": {\n";
+
+    for (size_t si = 0; si < results.size(); ++si) {
+        const auto& [label, raw] = results[si];
+
+        std::vector<double> v;
+        v.reserve(raw.size());
+        for (const auto& s : raw)
+            v.push_back(static_cast<double>(s.count()) / 1000.0);
+        std::sort(v.begin(), v.end());
+
+        double avg = std::accumulate(v.begin(), v.end(), 0.0) / static_cast<double>(v.size());
+
+        f << "    " << json_str(label) << ": {\n"
+          << "      \"n\": "      << v.size()          << ",\n"
+          << "      \"avg_us\": " << avg               << ",\n"
+          << "      \"p50_us\": " << pct_val(v, 50)   << ",\n"
+          << "      \"p90_us\": " << pct_val(v, 90)   << ",\n"
+          << "      \"p99_us\": " << pct_val(v, 99)   << ",\n"
+          << "      \"max_us\": " << v.back()          << ",\n";
+
+        f << "      \"percentile_curve\": [\n";
+        for (int pi = 0; pi < kNumPcts; ++pi) {
+            f << "        {\"p\": " << kPcts[pi]
+              << ", \"value_us\": " << pct_val(v, kPcts[pi]) << "}";
+            if (pi + 1 < kNumPcts) f << ",";
+            f << "\n";
+        }
+        f << "      ],\n";
+
+        std::vector<long long> counts(kNumBuckets + 1, 0);
+        for (double x : v) {
+            bool placed = false;
+            for (int bi = 0; bi < kNumBuckets; ++bi) {
+                if (x <= kBuckets[bi]) { counts[bi]++; placed = true; break; }
+            }
+            if (!placed) counts[kNumBuckets]++;
+        }
+
+        struct Entry { std::string le; long long count; };
+        std::vector<Entry> entries;
+        for (int bi = 0; bi <= kNumBuckets; ++bi) {
+            if (counts[bi] == 0) continue;
+            std::ostringstream le;
+            if (bi < kNumBuckets)
+                le << std::fixed << std::setprecision(2) << kBuckets[bi];
+            else
+                le << "+inf";
+            entries.push_back({le.str(), counts[bi]});
+        }
+
+        f << "      \"histogram\": [\n";
+        for (size_t ei = 0; ei < entries.size(); ++ei) {
+            f << "        {\"le_us\": \"" << entries[ei].le
+              << "\", \"count\": " << entries[ei].count << "}";
+            if (ei + 1 < entries.size()) f << ",";
+            f << "\n";
+        }
+        f << "      ]\n";
+
+        f << "    }";
+        if (si + 1 < results.size()) f << ",";
+        f << "\n";
+    }
+
+    f << "  }\n}\n";
 }
 
 // ---------------------------------------------------------------------------
@@ -219,11 +321,11 @@ static std::vector<ns> run_scenario(const char *label, Fn fn, int warmup, int n)
 int main(int argc, char **argv) {
     constexpr int WARMUP = 5000;
     constexpr int N      = 50000;
-    const std::string csv_path = (argc >= 2) ? argv[1] : "../bench_output//bench_results.csv";
+    const std::string csv_path = (argc >= 2) ? argv[1] : "../bench_output/bench_results.csv";
 
-    std::printf("\nOrder Book Matching Engine — Latency Benchmark\n");
-    std::printf("================================================\n");
-    std::printf("  warmup=%d  measured=%d  clk=steady_clock\n\n", WARMUP, N);
+    std::fprintf(stderr, "\nOrder Book Matching Engine — Latency Benchmark\n");
+    std::fprintf(stderr, "================================================\n");
+    std::fprintf(stderr, "  warmup=%d  measured=%d  clk=steady_clock\n\n", WARMUP, N);
 
     std::vector<std::pair<std::string, std::vector<ns>>> all_results;
 
@@ -236,7 +338,7 @@ int main(int argc, char **argv) {
     all_results.emplace_back("mixed (60/30/10)",
         run_scenario("mixed (60/30/10)", bench_mixed,     WARMUP, N));
 
-    std::printf("\n");
+    std::fprintf(stderr, "\n");
 
     auto run_sweep = [&](const char *label, int levels, int qty_per_level) {
         { OrderBook wb; seed_book(wb, 100, 2, 20, 5000, 5000); MatchingEngine we(wb);
@@ -251,8 +353,9 @@ int main(int argc, char **argv) {
     run_sweep("mkt sweep 10 levels", 10, 500);
     run_sweep("mkt sweep 20 levels", 20, 500);
 
-    std::printf("\n  All latencies in microseconds (µs).\n");
+    std::fprintf(stderr, "\n  All latencies in microseconds (µs).\n");
 
     write_csv(csv_path, all_results);
+    write_json(std::cout, all_results);
     return 0;
 }

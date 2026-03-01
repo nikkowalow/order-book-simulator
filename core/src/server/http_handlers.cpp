@@ -3,6 +3,8 @@
 
 #include <atomic>
 #include <cctype>
+#include <cstdlib>
+#include <mutex>
 #include <sstream>
 
 #include <book/order_book.hpp>
@@ -460,6 +462,37 @@ void register_http_routes(httplib::Server& http, OrderBook& book,
             res.set_content(oss.str(), "application/json");
         });
     }
+
+    http.Get("/benchmark", [](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+
+        static std::mutex bench_run_mtx;
+        std::lock_guard<std::mutex> lk(bench_run_mtx);
+
+        FILE* pipe = popen("./bench", "r");
+        if (!pipe) {
+            res.status = 500;
+            res.set_content(json_error("failed to launch bench"), "application/json");
+            return;
+        }
+
+        std::string body;
+        char buf[4096];
+        while (std::fgets(buf, sizeof(buf), pipe))
+            body += buf;
+
+        int ret = pclose(pipe);
+        if (ret != 0) {
+            res.status = 500;
+            res.set_content(
+                json_error("bench binary failed (exit " + std::to_string(ret) + ")"),
+                "application/json"
+            );
+            return;
+        }
+
+        res.set_content(body, "application/json");
+    });
 
     // Market maker endpoints
     if (market_maker) {
