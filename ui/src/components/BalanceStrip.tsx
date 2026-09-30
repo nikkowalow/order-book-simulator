@@ -55,10 +55,10 @@ export default function BalanceStrip() {
             minWidth: 0,
           }}
         >
-          <div className="t-label" style={{ fontSize: 9 }}>
+          <div className="t-label" style={{ fontSize: 12 }}>
             {label}
           </div>
-          <Flash value={raw} style={{ fontSize: 12, fontWeight: 700, color }}>
+          <Flash value={raw} style={{ fontSize: 15, fontWeight: 700, color }}>
             {value}
           </Flash>
         </div>

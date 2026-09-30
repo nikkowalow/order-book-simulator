@@ -267,7 +267,7 @@ const SEED_DATA: BenchmarkData = {
 const CHART_BODY: React.CSSProperties = { overflow: "hidden", padding: "8px 8px 4px" };
 
 const AXIS = {
-  tick: { fill: T.dim, fontSize: 10, fontFamily: T.font },
+  tick: { fill: T.dim, fontSize: 13, fontFamily: T.font },
   axisLine: { stroke: T.line },
   tickLine: false as const,
 };
@@ -279,7 +279,7 @@ const TOOLTIP = {
     background: "#000",
     border: `1px solid ${T.amber}`,
     borderRadius: 0,
-    fontSize: 11,
+    fontSize: 14,
     fontFamily: T.font,
     color: T.text,
   },
@@ -403,7 +403,7 @@ export default function PerformanceAnalytics() {
           display: "flex",
           alignItems: "center",
           gap: 4,
-          height: 24,
+          height: 30,
           paddingRight: 6,
           background: T.panel,
           border: `1px solid ${T.line}`,
@@ -469,9 +469,9 @@ export default function PerformanceAnalytics() {
                 dataKey="name"
                 {...AXIS}
                 interval={0}
-                tick={{ ...AXIS.tick, fontSize: 9 }}
+                tick={{ ...AXIS.tick, fontSize: 12 }}
               />
-              <YAxis {...AXIS} width={40} />
+              <YAxis {...AXIS} width={52} />
               <Tooltip
                 {...TOOLTIP}
                 formatter={(v) => [`${Number(v).toFixed(3)} µs`]}
@@ -479,7 +479,7 @@ export default function PerformanceAnalytics() {
               <Legend
                 iconType="square"
                 iconSize={8}
-                wrapperStyle={{ fontSize: 10, fontFamily: T.font, color: T.dim, paddingTop: 2 }}
+                wrapperStyle={{ fontSize: 13, fontFamily: T.font, color: T.dim, paddingTop: 2 }}
               />
               <Bar dataKey="p50" name="P50" fill={T.up} />
               <Bar dataKey="p90" name="P90" fill={T.amber} />
@@ -498,9 +498,9 @@ export default function PerformanceAnalytics() {
                 {...AXIS}
                 tickFormatter={(v) => `p${v}`}
                 interval={0}
-                tick={{ ...AXIS.tick, fontSize: 9 }}
+                tick={{ ...AXIS.tick, fontSize: 12 }}
               />
-              <YAxis {...AXIS} width={40} />
+              <YAxis {...AXIS} width={52} />
               <Tooltip
                 {...TOOLTIP}
                 formatter={(v) => [`${Number(v).toFixed(3)} µs`, "latency"]}
@@ -527,9 +527,9 @@ export default function PerformanceAnalytics() {
               <XAxis
                 dataKey="le_us"
                 {...AXIS}
-                tick={{ ...AXIS.tick, fontSize: 9 }}
+                tick={{ ...AXIS.tick, fontSize: 12 }}
               />
-              <YAxis {...AXIS} width={40} />
+              <YAxis {...AXIS} width={52} />
               <Tooltip
                 {...TOOLTIP}
                 formatter={(v) => [Number(v).toLocaleString(), "count"]}
@@ -550,8 +550,8 @@ export default function PerformanceAnalytics() {
                 type="category"
                 dataKey="name"
                 {...AXIS}
-                width={72}
-                tick={{ ...AXIS.tick, fontSize: 9 }}
+                width={96}
+                tick={{ ...AXIS.tick, fontSize: 12 }}
               />
               <Tooltip
                 {...TOOLTIP}
@@ -600,11 +600,11 @@ export default function PerformanceAnalytics() {
                 </div>
                 <Flash
                   value={value}
-                  style={{ fontSize: 24, fontWeight: 700, color, lineHeight: 1 }}
+                  style={{ fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}
                 >
                   {noUnit ? value.toLocaleString() : value.toFixed(3)}
                 </Flash>
-                <div style={{ fontSize: 10, color: T.mute, marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: T.mute, marginTop: 4 }}>
                   {noUnit ? "SAMPLES" : "µs"}
                 </div>
               </div>
@@ -620,7 +620,7 @@ export default function PerformanceAnalytics() {
               height: "100%",
               borderCollapse: "collapse",
               tableLayout: "fixed",
-              fontSize: 12,
+              fontSize: 15,
             }}
           >
             <thead>

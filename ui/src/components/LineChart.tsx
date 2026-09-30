@@ -20,7 +20,7 @@ export default function LineChart({ data, color = T.cyan }: LineChartProps) {
   }, []);
 
   const { w, h } = dims;
-  const pad = { top: 8, bottom: 6, left: 4, right: 34 };
+  const pad = { top: 8, bottom: 6, left: 4, right: 44 };
   const pw = w - pad.left - pad.right;
   const ph = h - pad.top - pad.bottom;
 
@@ -74,7 +74,7 @@ export default function LineChart({ data, color = T.cyan }: LineChartProps) {
               <text
                 x={w - pad.right + 4}
                 y={y + 3}
-                fontSize={9}
+                fontSize={12}
                 fontFamily={T.font}
                 fill={T.dim}
               >

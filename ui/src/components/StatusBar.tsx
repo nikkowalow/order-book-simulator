@@ -88,7 +88,7 @@ export default function StatusBar() {
         alignItems: "center",
         background: "#0a0a0a",
         borderTop: `1px solid ${T.amberDim}`,
-        fontSize: 10,
+        fontSize: 13,
         fontWeight: 600,
         letterSpacing: "0.03em",
         color: T.text,

@@ -25,14 +25,14 @@ export function VolumeBar({
         gap: 8,
         padding: "4px 6px",
         borderTop: `1px solid ${T.line}`,
-        fontSize: 10,
+        fontSize: 13,
         fontWeight: 600,
       }}
     >
       <span style={{ color: T.up }}>
         BID {fmt(bidVolume)} · {bidPct.toFixed(1)}%
       </span>
-      <div style={{ display: "flex", gap: 2, height: 8 }}>
+      <div style={{ display: "flex", gap: 2, height: 11 }}>
         {Array.from({ length: SEGMENTS }, (_, i) => (
           <div
             key={i}

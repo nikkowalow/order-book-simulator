@@ -4,7 +4,7 @@ import { OrderEvent, OrderEventType, OrderSide } from "../types/types";
 import Panel, { LiveTag } from "./Panel";
 import { T, fmt } from "../theme";
 
-const COLS = "0.8fr 1.2fr 1fr 0.8fr 1fr";
+const COLS = "0.7fr 1.1fr 0.9fr 0.6fr 1.3fr";
 
 // Event `ts` is the engine's steady_clock in ns (time since host boot), not
 // wall time — render it as an engine clock rather than "x ago".
@@ -59,14 +59,22 @@ export default function TradeHistory() {
         err ? (
           <LiveTag label="FEED ERR" color={T.down} />
         ) : (
-          <LiveTag label={events ? "POLL 1S" : "WAIT"} color={events ? T.up : T.yellow} />
+          <LiveTag
+            label={events ? "POLL 1S" : "WAIT"}
+            color={events ? T.up : T.yellow}
+          />
         )
       }
       bodyStyle={{ overflow: "hidden" }}
     >
       <div
         className="t-cols"
-        style={{ display: "grid", gridTemplateColumns: COLS, padding: "2px 6px" }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: COLS,
+          columnGap: 6,
+          padding: "2px 6px",
+        }}
       >
         <span>Side</span>
         <span>Type</span>
@@ -112,24 +120,30 @@ export default function TradeHistory() {
                   padding: "1px 6px",
                   background: "#0d0d0d",
                   color: T.amber,
-                  fontSize: 10,
+                  fontSize: 13,
                   fontWeight: 600,
                 }}
               >
                 <span>BATCH #{first.batch_id}</span>
-                <span style={{ color: T.dim }}>ENG {engineClock(first.ts)}</span>
+                <span style={{ color: T.dim }}>
+                  ENG {engineClock(first.ts)}
+                </span>
               </div>
 
               {group.map((e) => {
-                const status = STATUS[e.type] ?? { label: e.type, color: T.text };
+                const status = STATUS[e.type] ?? {
+                  label: e.type,
+                  color: T.text,
+                };
                 return (
                   <div
                     key={`${e.seq}:${e.ts}`}
                     style={{
                       display: "grid",
                       gridTemplateColumns: COLS,
+                      columnGap: 6,
                       padding: "1px 6px",
-                      fontSize: 11,
+                      fontSize: 14,
                     }}
                   >
                     <span

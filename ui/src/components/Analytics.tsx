@@ -41,7 +41,7 @@ export default function Analytics() {
           display: "flex",
           gap: 10,
           padding: "2px 6px",
-          fontSize: 10,
+          fontSize: 13,
           fontWeight: 600,
           borderBottom: `1px solid ${T.lineSoft}`,
         }}
@@ -59,7 +59,7 @@ export default function Analytics() {
 
       <div style={{ flex: 1, minHeight: 0 }}>
         {latencies.length === 0 ? (
-          <div style={{ padding: 8, color: T.mute, fontSize: 10 }}>
+          <div style={{ padding: 8, color: T.mute, fontSize: 13 }}>
             NO ORDERS SENT · SUBMIT VIA TICKET BELOW
           </div>
         ) : (

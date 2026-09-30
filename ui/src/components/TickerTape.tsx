@@ -102,7 +102,7 @@ export default function TickerTape() {
         alignItems: "stretch",
         background: "#040404",
         borderBottom: `1px solid ${T.line}`,
-        fontSize: 11,
+        fontSize: 14,
         overflow: "hidden",
       }}
     >
@@ -119,7 +119,7 @@ export default function TickerTape() {
           letterSpacing: "0.06em",
         }}
       >
-        <span className="led blink" style={{ color: T.down, width: 5, height: 5 }} />
+        <span className="led blink" style={{ color: T.down, width: 7, height: 7 }} />
         PRINTS
       </div>
 

@@ -22,7 +22,7 @@ function TerminalFrame() {
     <div
       style={{
         display: "grid",
-        gridTemplateRows: "26px 20px 1fr 18px",
+        gridTemplateRows: "34px 26px 1fr 24px",
         height: "100vh",
         overflow: "hidden",
       }}
@@ -42,8 +42,8 @@ function Dashboard() {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 3fr 1fr",
-        gridTemplateRows: "34px 1fr 1fr",
+        gridTemplateColumns: "1.15fr 2.5fr 1.3fr",
+        gridTemplateRows: "46px 1.3fr 1fr",
         height: "100%",
         gap: GAP,
       }}

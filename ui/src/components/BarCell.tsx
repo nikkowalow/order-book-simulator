@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Side } from "../types/types";
 
-export const ROW_HEIGHT = 18;
+export const ROW_HEIGHT = 23;
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));

@@ -5,7 +5,7 @@ import Panel from "./Panel";
 import Flash from "./Flash";
 import { T, fmt } from "../theme";
 
-const COLS = "10px 1.2fr 0.7fr 1fr 0.8fr 28px";
+const COLS = "14px 1.1fr 0.7fr 1fr 0.8fr 40px";
 
 async function cancelOrder(id: number, userId: number | null) {
   await fetch(`${SERVER_URL}/cancel`, {
@@ -38,7 +38,7 @@ export default function RestingOrders() {
                 key={label}
                 onClick={() => setShowMine(label === "Mine")}
                 className={active ? "t-btn on" : "t-btn"}
-                style={{ fontSize: 10, padding: "0 5px" }}
+                style={{ fontSize: 13, padding: "0 5px" }}
               >
                 {i + 1}) {label}
               </button>
@@ -82,7 +82,7 @@ export default function RestingOrders() {
                 gridTemplateColumns: COLS,
                 alignItems: "center",
                 padding: "1px 6px",
-                fontSize: 11,
+                fontSize: 14,
                 borderBottom: `1px solid ${T.lineSoft}`,
                 background: mine ? "rgba(255,210,63,0.06)" : undefined,
               }}
@@ -109,7 +109,7 @@ export default function RestingOrders() {
                   marginLeft: "auto",
                   padding: 0,
                   font: "inherit",
-                  fontSize: 10,
+                  fontSize: 13,
                   fontWeight: 700,
                   color: T.down,
                   background: "transparent",

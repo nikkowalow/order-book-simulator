@@ -51,7 +51,7 @@ export default function ViewportGate({
               background: "#000",
               border: `1px solid ${T.amber}`,
               color: T.amber,
-              fontSize: 13,
+              fontSize: 16,
               fontWeight: 700,
               letterSpacing: "0.08em",
               textAlign: "center",

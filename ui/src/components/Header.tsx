@@ -90,9 +90,9 @@ function CommandLine() {
         aria-label="Command line"
         className="t-input"
         style={{
-          width: 210,
-          height: 18,
-          fontSize: 11,
+          width: 250,
+          height: 24,
+          fontSize: 14,
           textTransform: "uppercase",
           background: "#0b0b0b",
         }}
@@ -165,12 +165,12 @@ export default function Header() {
         padding: "0 8px",
         background: "#0a0a0a",
         borderBottom: `1px solid ${T.amber}`,
-        fontSize: 11,
+        fontSize: 14,
         boxSizing: "border-box",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <img src={logo} alt="Logo" style={{ height: 18, width: 18 }} />
+        <img src={logo} alt="Logo" style={{ height: 24, width: 24 }} />
         <span
           className="glow"
           style={{ color: T.amber, fontWeight: 700, letterSpacing: "0.12em" }}

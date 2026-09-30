@@ -5,7 +5,7 @@ import { T, fmt } from "../theme";
 
 type Point = { price: number; cumQty: number };
 
-const FONT = `10px ${T.font}`;
+const FONT = `13px ${T.font}`;
 
 export default function DepthChart() {
   const { book } = useWebSocket();
@@ -58,7 +58,7 @@ export default function DepthChart() {
     canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const pad = { top: 10, right: 12, bottom: 20, left: 46 };
+    const pad = { top: 12, right: 14, bottom: 24, left: 58 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
 
@@ -142,12 +142,12 @@ export default function DepthChart() {
     ctx.textAlign = "center";
     for (let i = 0; i <= 5; i++) {
       const price = minPrice + (priceRange / 5) * i;
-      ctx.fillText(price.toFixed(0), toX(price), h - 6);
+      ctx.fillText(price.toFixed(0), toX(price), h - 7);
     }
     ctx.textAlign = "right";
     for (let i = 0; i <= 4; i++) {
       const qty = (qtyRange / 4) * (4 - i);
-      ctx.fillText(qty.toFixed(0), pad.left - 6, pad.top + (plotH / 4) * i + 3);
+      ctx.fillText(qty.toFixed(0), pad.left - 6, pad.top + (plotH / 4) * i + 4);
     }
 
     // Tag drawn in a filled box, clamped inside the plot.
@@ -155,10 +155,10 @@ export default function DepthChart() {
       const tw = ctx.measureText(text).width + 8;
       const bx = Math.min(Math.max(x - tw / 2, pad.left), w - pad.right - tw);
       ctx.fillStyle = bg;
-      ctx.fillRect(bx, y, tw, 13);
+      ctx.fillRect(bx, y, tw, 17);
       ctx.fillStyle = "#000";
       ctx.textAlign = "left";
-      ctx.fillText(text, bx + 4, y + 10);
+      ctx.fillText(text, bx + 4, y + 13);
     };
 
     // Mid marker
@@ -202,7 +202,7 @@ export default function DepthChart() {
 
       tag(price.toFixed(1), hoverX, pad.top + plotH + 1, T.text);
       if (qty != null) {
-        tag(`CUM ${fmt(qty)}`, hoverX, toY(qty) - 15, price <= bestBid ? T.up : T.down);
+        tag(`CUM ${fmt(qty)}`, hoverX, toY(qty) - 19, price <= bestBid ? T.up : T.down);
       }
     }
   }, [cumulative, size, hoverX]);

@@ -75,7 +75,7 @@ export default function QuoteStrip() {
         background: T.panel,
         border: `1px solid ${T.line}`,
         boxSizing: "border-box",
-        fontSize: 12,
+        fontSize: 15,
         overflow: "hidden",
       }}
     >
@@ -89,13 +89,13 @@ export default function QuoteStrip() {
           background: "#111",
         }}
       >
-        <span style={{ color: T.text, fontWeight: 700, fontSize: 14 }}>OSM</span>
+        <span style={{ color: T.text, fontWeight: 700, fontSize: 17 }}>OSM</span>
         <span
           style={{
             background: T.yellow,
             color: "#000",
             fontWeight: 700,
-            fontSize: 10,
+            fontSize: 13,
             padding: "1px 4px",
           }}
         >
@@ -112,10 +112,10 @@ export default function QuoteStrip() {
           whiteSpace: "nowrap",
         }}
       >
-        <span style={{ color: chgColor, fontSize: 12 }}>{arrow}</span>
+        <span style={{ color: chgColor, fontSize: 15 }}>{arrow}</span>
         <Flash
           value={stats?.last}
-          style={{ fontSize: 18, fontWeight: 700, color: T.text }}
+          style={{ fontSize: 22, fontWeight: 700, color: T.text }}
         >
           {stats ? fmt(stats.last, 1) : "—"}
         </Flash>
@@ -180,7 +180,7 @@ export default function QuoteStrip() {
           marginLeft: "auto",
           padding: "0 10px",
           color: T.mute,
-          fontSize: 10,
+          fontSize: 13,
           whiteSpace: "nowrap",
         }}
       >

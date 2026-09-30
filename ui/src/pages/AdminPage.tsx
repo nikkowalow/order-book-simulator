@@ -148,7 +148,7 @@ export default function AdminPage() {
           <span
             style={{
               flex: 1,
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: 700,
               color: mmRunning === true ? T.up : T.dim,
             }}
@@ -160,7 +160,7 @@ export default function AdminPage() {
             disabled={mmLoading || mmRunning === null}
             className="t-btn on"
             style={{
-              fontSize: 12,
+              fontSize: 15,
               padding: "3px 14px",
               background: mmRunning ? T.down : T.up,
             }}
@@ -183,7 +183,7 @@ export default function AdminPage() {
               <div className="t-label" style={{ marginBottom: 4 }}>
                 {label}
               </div>
-              <Flash value={value} style={{ fontSize: 20, fontWeight: 700, color }}>
+              <Flash value={value} style={{ fontSize: 24, fontWeight: 700, color }}>
                 {value ?? "—"}
               </Flash>
             </div>
@@ -192,7 +192,7 @@ export default function AdminPage() {
             <div className="t-label" style={{ marginBottom: 4 }}>
               Levels
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>
               <span style={{ color: T.up }}>{bookStats?.bid_levels ?? 0}</span>
               <span style={{ color: T.dim }}> / </span>
               <span style={{ color: T.down }}>{bookStats?.ask_levels ?? 0}</span>
@@ -213,7 +213,7 @@ export default function AdminPage() {
               NO USERS CONNECTED
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
               <thead>
                 <tr className="t-cols">
                   {["User ID", "Trades", "Open Orders", "P&L"].map((h) => (

@@ -24,15 +24,15 @@ export function MarketPrice() {
   return (
     <div style={{ textAlign: "center", lineHeight: 1.15, padding: "2px 0" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, justifyContent: "center" }}>
-        <span style={{ color: arrowColor, fontSize: 11 }}>{arrow}</span>
+        <span style={{ color: arrowColor, fontSize: 14 }}>{arrow}</span>
         <Flash
           value={mid}
-          style={{ fontSize: 17, fontWeight: 700, color: T.text }}
+          style={{ fontSize: 21, fontWeight: 700, color: T.text }}
         >
           {fmt(mid, 2)}
         </Flash>
       </div>
-      <div style={{ fontSize: 10, color: T.dim, letterSpacing: "0.04em" }}>
+      <div style={{ fontSize: 13, color: T.dim, letterSpacing: "0.04em" }}>
         MID · SPRD{" "}
         <span style={{ color: T.yellow }}>{fmt(spread, 1)}</span> ·{" "}
         {((spread / mid) * 10_000).toFixed(0)} BPS

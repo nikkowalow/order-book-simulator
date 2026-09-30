@@ -73,9 +73,9 @@ export default function OrderEntry() {
 
   const sideButton = (side: "BUY" | "SELL"): React.CSSProperties => ({
     flex: 1,
-    height: 28,
+    height: 36,
     font: "inherit",
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: 700,
     letterSpacing: "0.12em",
     cursor: "pointer",
@@ -99,7 +99,7 @@ export default function OrderEntry() {
               key={t}
               onClick={() => setOrderType(t)}
               className={orderType === t ? "t-btn on" : "t-btn"}
-              style={{ fontSize: 10, padding: "0 5px" }}
+              style={{ fontSize: 13, padding: "0 5px" }}
             >
               {t === "LIMIT" ? "LMT" : "MKT"}
             </button>
@@ -143,7 +143,7 @@ export default function OrderEntry() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            fontSize: 10,
+            fontSize: 13,
             color: T.dim,
           }}
         >
@@ -177,7 +177,7 @@ export default function OrderEntry() {
           padding: "2px 6px",
           borderTop: `1px solid ${T.line}`,
           background: "#0a0a0a",
-          fontSize: 10,
+          fontSize: 13,
           fontWeight: 700,
           whiteSpace: "nowrap",
           overflow: "hidden",
