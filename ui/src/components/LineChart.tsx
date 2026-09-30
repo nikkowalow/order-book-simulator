@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { T } from "../theme";
 
 interface LineChartProps {
   data: number[];
   color?: string;
 }
 
-export default function LineChart({
-  data,
-  color = "rgb(74,222,128)",
-}: LineChartProps) {
+export default function LineChart({ data, color = T.cyan }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
 
@@ -22,7 +20,7 @@ export default function LineChart({
   }, []);
 
   const { w, h } = dims;
-  const pad = { top: 8, bottom: 20, left: 4, right: 4 };
+  const pad = { top: 8, bottom: 6, left: 4, right: 34 };
   const pw = w - pad.left - pad.right;
   const ph = h - pad.top - pad.bottom;
 
@@ -30,43 +28,31 @@ export default function LineChart({
   const yMax = Math.max(max * 1.2, 2);
   const n = data.length;
 
-  const toX = (i: number) => pad.left + (i / (n - 1)) * pw;
+  const toX = (i: number) => pad.left + (n > 1 ? (i / (n - 1)) * pw : pw);
   const toY = (v: number) => pad.top + ph - (v / yMax) * ph;
 
-  const linePath =
-    n > 0
-      ? (() => {
-          let path = `M${toX(0).toFixed(1)},${toY(data[0]).toFixed(1)}`;
+  let linePath = "";
+  if (n > 0) {
+    linePath = `M${toX(0).toFixed(1)},${toY(data[0]).toFixed(1)}`;
+    for (let i = 1; i < n; i++) {
+      // horizontal, then vertical (step)
+      linePath += ` L${toX(i).toFixed(1)},${toY(data[i - 1]).toFixed(1)}`;
+      linePath += ` L${toX(i).toFixed(1)},${toY(data[i]).toFixed(1)}`;
+    }
+  }
 
-          for (let i = 1; i < n; i++) {
-            const prevY = toY(data[i - 1]);
-            const currX = toX(i);
-            const currY = toY(data[i]);
-
-            // horizontal segment
-            path += ` L${currX.toFixed(1)},${prevY.toFixed(1)}`;
-
-            // vertical segment
-            path += ` L${currX.toFixed(1)},${currY.toFixed(1)}`;
-          }
-
-          return path;
-        })()
-      : "";
-
-  const areaPath =
-    linePath.length > 0
-      ? linePath +
-        ` L${toX(n - 1).toFixed(1)},${(pad.top + ph).toFixed(1)}` +
-        ` L${toX(0).toFixed(1)},${(pad.top + ph).toFixed(1)} Z`
-      : "";
+  const areaPath = linePath
+    ? linePath +
+      ` L${toX(n - 1).toFixed(1)},${(pad.top + ph).toFixed(1)}` +
+      ` L${toX(0).toFixed(1)},${(pad.top + ph).toFixed(1)} Z`
+    : "";
 
   const yTicks = [0, yMax / 2, yMax].map((v) => ({
     y: toY(v),
     label: v.toFixed(1),
   }));
 
-  const gradId = `area-grad-${color.replace(/[^a-z0-9]/gi, "")}`;
+  const lastY = n > 0 ? toY(data[n - 1]) : 0;
 
   return (
     <div
@@ -75,13 +61,6 @@ export default function LineChart({
     >
       {w > 0 && h > 0 && (
         <svg width={w} height={h} style={{ display: "block" }}>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.18} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-
           {yTicks.map(({ y, label }) => (
             <g key={label}>
               <line
@@ -89,50 +68,53 @@ export default function LineChart({
                 y1={y}
                 x2={w - pad.right}
                 y2={y}
-                stroke="rgba(255,255,255,0.05)"
-                strokeWidth={1}
+                stroke={T.line}
+                strokeDasharray="1 3"
               />
               <text
-                x={w - pad.right - 2}
-                y={y - 3}
-                fontSize={8}
-                fill="rgba(255,255,255,0.2)"
-                textAnchor="end"
+                x={w - pad.right + 4}
+                y={y + 3}
+                fontSize={9}
+                fontFamily={T.font}
+                fill={T.dim}
               >
                 {label}
               </text>
             </g>
           ))}
 
-          <line
-            x1={pad.left}
-            y1={pad.top + ph}
-            x2={w - pad.right}
-            y2={pad.top + ph}
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-          />
-
-          {areaPath && <path d={areaPath} fill={`url(#${gradId})`} />}
+          {areaPath && <path d={areaPath} fill={color} fillOpacity={0.1} />}
 
           {linePath && (
             <path
               d={linePath}
               fill="none"
               stroke={color}
-              strokeWidth={1.5}
-              strokeLinejoin="round"
-              strokeLinecap="round"
+              strokeWidth={1.25}
+              shapeRendering="crispEdges"
             />
           )}
 
           {n > 0 && (
-            <circle
-              cx={toX(n - 1)}
-              cy={toY(data[n - 1])}
-              r={2.5}
-              fill={color}
-            />
+            <>
+              <line
+                x1={pad.left}
+                y1={lastY}
+                x2={w - pad.right}
+                y2={lastY}
+                stroke={color}
+                strokeOpacity={0.35}
+                strokeDasharray="2 2"
+              />
+              <rect
+                className="blink"
+                x={toX(n - 1) - 2.5}
+                y={lastY - 2.5}
+                width={5}
+                height={5}
+                fill={color}
+              />
+            </>
           )}
         </svg>
       )}

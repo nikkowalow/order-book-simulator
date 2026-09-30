@@ -1,43 +1,71 @@
+import { useMemo } from "react";
 import LineChart from "./LineChart";
+import Panel from "./Panel";
+import Flash from "./Flash";
 import { useAnalyticsStore } from "../stores/analyticsStore";
+import { T } from "../theme";
+
+function Stat({ label, value, color = T.text }: { label: string; value: number | null; color?: string }) {
+  return (
+    <span style={{ whiteSpace: "nowrap" }}>
+      <span style={{ color: T.amber }}>{label}</span>{" "}
+      <span style={{ color }}>{value == null ? "—" : value.toFixed(2)}</span>
+    </span>
+  );
+}
 
 export default function Analytics() {
   const latencies = useAnalyticsStore((state) => state.latencies);
+
+  const stats = useMemo(() => {
+    if (latencies.length === 0) return null;
+    const sorted = [...latencies].sort((a, b) => a - b);
+    return {
+      last: latencies[latencies.length - 1],
+      avg: latencies.reduce((a, b) => a + b, 0) / latencies.length,
+      p95: sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))],
+      max: sorted[sorted.length - 1],
+    };
+  }, [latencies]);
+
   return (
-    <div
-      className="panel"
-      style={{
-        width: "100%",
-        height: "100%",
-        boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
+    <Panel
+      code="LT"
+      title="Order RTT · ms"
+      meta={<span>N {latencies.length}</span>}
+      bodyStyle={{ overflow: "hidden" }}
     >
       <div
         style={{
-          padding: "6px 12px",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(255,255,255,0.03)",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
           flexShrink: 0,
+          display: "flex",
+          gap: 10,
+          padding: "2px 6px",
+          fontSize: 10,
+          fontWeight: 600,
+          borderBottom: `1px solid ${T.lineSoft}`,
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: 12, letterSpacing: 0.3 }}>
-          Performance
+        <span style={{ whiteSpace: "nowrap" }}>
+          <span style={{ color: T.amber }}>LAST</span>{" "}
+          <Flash value={stats?.last} style={{ color: T.cyan }}>
+            {stats ? stats.last.toFixed(2) : "—"}
+          </Flash>
         </span>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
-          Order latency (ms)
-        </span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 14 }}></div>
+        <Stat label="AVG" value={stats?.avg ?? null} />
+        <Stat label="P95" value={stats?.p95 ?? null} color={T.yellow} />
+        <Stat label="MAX" value={stats?.max ?? null} color={T.down} />
       </div>
 
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        <LineChart data={latencies} color="rgb(74,222,128)" />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {latencies.length === 0 ? (
+          <div style={{ padding: 8, color: T.mute, fontSize: 10 }}>
+            NO ORDERS SENT · SUBMIT VIA TICKET BELOW
+          </div>
+        ) : (
+          <LineChart data={latencies} color={T.cyan} />
+        )}
       </div>
-    </div>
+    </Panel>
   );
 }

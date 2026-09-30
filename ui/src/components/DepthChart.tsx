@@ -1,15 +1,33 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useWebSocket } from "../context/WebSocketContext";
+import Panel from "./Panel";
+import { T, fmt } from "../theme";
+
+type Point = { price: number; cumQty: number };
+
+const FONT = `10px ${T.font}`;
 
 export default function DepthChart() {
   const { book } = useWebSocket();
+  const boxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [hoverX, setHoverX] = useState<number | null>(null);
+
+  useEffect(() => {
+    const obs = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setSize({ w: width, h: height });
+    });
+    if (boxRef.current) obs.observe(boxRef.current);
+    return () => obs.disconnect();
+  }, []);
 
   const cumulative = useMemo(() => {
     if (!book) return null;
 
     // Bids: descending price, cumulative qty
-    const bidPoints: { price: number; cumQty: number }[] = [];
+    const bidPoints: Point[] = [];
     let cum = 0;
     for (const lvl of book.bids) {
       cum += lvl.qty;
@@ -17,7 +35,7 @@ export default function DepthChart() {
     }
 
     // Asks: ascending price, cumulative qty
-    const askPoints: { price: number; cumQty: number }[] = [];
+    const askPoints: Point[] = [];
     cum = 0;
     for (const lvl of book.asks) {
       cum += lvl.qty;
@@ -29,20 +47,18 @@ export default function DepthChart() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !cumulative) return;
+    if (!canvas || !cumulative || size.w === 0) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    const { w, h } = size;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const w = rect.width;
-    const h = rect.height;
-    const pad = { top: 20, right: 20, bottom: 30, left: 50 };
+    const pad = { top: 10, right: 12, bottom: 20, left: 46 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
 
@@ -71,146 +87,161 @@ export default function DepthChart() {
       pad.left + ((price - minPrice) / priceRange) * plotW;
     const toY = (qty: number) => pad.top + plotH - (qty / qtyRange) * plotH;
 
-    // Grid lines
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    // Dotted grid
+    ctx.strokeStyle = T.line;
     ctx.lineWidth = 1;
+    ctx.setLineDash([1, 3]);
     for (let i = 0; i <= 4; i++) {
-      const y = pad.top + (plotH / 4) * i;
+      const y = Math.round(pad.top + (plotH / 4) * i) + 0.5;
       ctx.beginPath();
       ctx.moveTo(pad.left, y);
       ctx.lineTo(w - pad.right, y);
       ctx.stroke();
     }
-
-    // Draw bid area (step/staircase: horizontal then vertical)
-    if (bidPoints.length > 0) {
-      // Fill
+    for (let i = 0; i <= 5; i++) {
+      const x = Math.round(pad.left + (plotW / 5) * i) + 0.5;
       ctx.beginPath();
-      ctx.moveTo(toX(bidPoints[0].price), toY(0));
-      ctx.lineTo(toX(bidPoints[0].price), toY(bidPoints[0].cumQty));
-      for (let i = 1; i < bidPoints.length; i++) {
-        // Horizontal to next price at current cumQty
-        ctx.lineTo(toX(bidPoints[i].price), toY(bidPoints[i - 1].cumQty));
-        // Vertical step up to new cumQty
-        ctx.lineTo(toX(bidPoints[i].price), toY(bidPoints[i].cumQty));
-      }
-      ctx.lineTo(toX(bidPoints[bidPoints.length - 1].price), toY(0));
-      ctx.closePath();
-      ctx.fillStyle = "rgba(34,197,94,0.15)";
-      ctx.fill();
-
-      // Line
-      ctx.beginPath();
-      ctx.moveTo(toX(bidPoints[0].price), toY(bidPoints[0].cumQty));
-      for (let i = 1; i < bidPoints.length; i++) {
-        ctx.lineTo(toX(bidPoints[i].price), toY(bidPoints[i - 1].cumQty));
-        ctx.lineTo(toX(bidPoints[i].price), toY(bidPoints[i].cumQty));
-      }
-      ctx.strokeStyle = "rgb(22,163,74)";
-      ctx.lineWidth = 2;
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
       ctx.stroke();
     }
+    ctx.setLineDash([]);
 
-    // Draw ask area (step/staircase: horizontal then vertical)
-    if (askPoints.length > 0) {
-      // Fill
+    // Step curve: horizontal to next price, then vertical to its cumQty.
+    const drawSide = (points: Point[], stroke: string, fill: string) => {
+      if (points.length === 0) return;
+      const trace = () => {
+        ctx.lineTo(toX(points[0].price), toY(points[0].cumQty));
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(toX(points[i].price), toY(points[i - 1].cumQty));
+          ctx.lineTo(toX(points[i].price), toY(points[i].cumQty));
+        }
+      };
+
       ctx.beginPath();
-      ctx.moveTo(toX(askPoints[0].price), toY(0));
-      ctx.lineTo(toX(askPoints[0].price), toY(askPoints[0].cumQty));
-      for (let i = 1; i < askPoints.length; i++) {
-        ctx.lineTo(toX(askPoints[i].price), toY(askPoints[i - 1].cumQty));
-        ctx.lineTo(toX(askPoints[i].price), toY(askPoints[i].cumQty));
-      }
-      ctx.lineTo(toX(askPoints[askPoints.length - 1].price), toY(0));
+      ctx.moveTo(toX(points[0].price), toY(0));
+      trace();
+      ctx.lineTo(toX(points[points.length - 1].price), toY(0));
       ctx.closePath();
-      ctx.fillStyle = "rgba(239,68,68,0.15)";
+      ctx.fillStyle = fill;
       ctx.fill();
 
-      // Line
       ctx.beginPath();
-      ctx.moveTo(toX(askPoints[0].price), toY(askPoints[0].cumQty));
-      for (let i = 1; i < askPoints.length; i++) {
-        ctx.lineTo(toX(askPoints[i].price), toY(askPoints[i - 1].cumQty));
-        ctx.lineTo(toX(askPoints[i].price), toY(askPoints[i].cumQty));
-      }
-      ctx.strokeStyle = "rgb(220,38,38)";
-      ctx.lineWidth = 2;
+      ctx.moveTo(toX(points[0].price), toY(points[0].cumQty));
+      trace();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
-    }
+    };
+    drawSide(bidPoints, T.up, T.upBg);
+    drawSide(askPoints, T.down, T.downBg);
 
-    // Axes labels
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.font = "11px system-ui, sans-serif";
+    // Axis labels
+    ctx.font = FONT;
+    ctx.fillStyle = T.dim;
     ctx.textAlign = "center";
-
-    // Price labels along bottom
-    const priceSteps = 5;
-    for (let i = 0; i <= priceSteps; i++) {
-      const price = minPrice + (priceRange / priceSteps) * i;
-      ctx.fillText(price.toFixed(0), toX(price), h - 8);
+    for (let i = 0; i <= 5; i++) {
+      const price = minPrice + (priceRange / 5) * i;
+      ctx.fillText(price.toFixed(0), toX(price), h - 6);
     }
-
-    // Qty labels along left
     ctx.textAlign = "right";
     for (let i = 0; i <= 4; i++) {
       const qty = (qtyRange / 4) * (4 - i);
-      const y = pad.top + (plotH / 4) * i;
-      ctx.fillText(qty.toFixed(0), pad.left - 8, y + 4);
+      ctx.fillText(qty.toFixed(0), pad.left - 6, pad.top + (plotH / 4) * i + 3);
     }
-  }, [cumulative]);
 
-  //   if (err) {
-  //     return (
-  //       <div style={{ maxWidth: 900, margin: "16px auto", color: "crimson" }}>
-  //         Depth chart error: {err}
-  //       </div>
-  //     );
-  //   }
+    // Tag drawn in a filled box, clamped inside the plot.
+    const tag = (text: string, x: number, y: number, bg: string) => {
+      const tw = ctx.measureText(text).width + 8;
+      const bx = Math.min(Math.max(x - tw / 2, pad.left), w - pad.right - tw);
+      ctx.fillStyle = bg;
+      ctx.fillRect(bx, y, tw, 13);
+      ctx.fillStyle = "#000";
+      ctx.textAlign = "left";
+      ctx.fillText(text, bx + 4, y + 10);
+    };
 
-  if (!book) {
-    return <div style={{ maxWidth: 900, margin: "16px auto" }}>Loading...</div>;
-  }
+    // Mid marker
+    if (bidPoints.length && askPoints.length) {
+      const mid = (bidPoints[0].price + askPoints[0].price) / 2;
+      const x = Math.round(toX(mid)) + 0.5;
+      ctx.strokeStyle = T.amber;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      tag(`MID ${mid.toFixed(2)}`, x, pad.top, T.amber);
+    }
+
+    // Crosshair readout
+    if (hoverX != null && hoverX >= pad.left && hoverX <= w - pad.right) {
+      const price = minPrice + ((hoverX - pad.left) / plotW) * priceRange;
+      const bestBid = bidPoints[0]?.price ?? -Infinity;
+      const bestAsk = askPoints[0]?.price ?? Infinity;
+      let qty: number | null = null;
+      if (price <= bestBid) {
+        qty = bidPoints.filter((p) => p.price >= price).pop()?.cumQty ?? null;
+      } else if (price >= bestAsk) {
+        qty = askPoints.filter((p) => p.price <= price).pop()?.cumQty ?? null;
+      }
+
+      ctx.strokeStyle = T.text;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(hoverX + 0.5, pad.top);
+      ctx.lineTo(hoverX + 0.5, pad.top + plotH);
+      if (qty != null) {
+        ctx.moveTo(pad.left, Math.round(toY(qty)) + 0.5);
+        ctx.lineTo(w - pad.right, Math.round(toY(qty)) + 0.5);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      tag(price.toFixed(1), hoverX, pad.top + plotH + 1, T.text);
+      if (qty != null) {
+        tag(`CUM ${fmt(qty)}`, hoverX, toY(qty) - 15, price <= bestBid ? T.up : T.down);
+      }
+    }
+  }, [cumulative, size, hoverX]);
 
   return (
-    <div
-      className="panel"
-      style={{
-        width: "100%",
-        height: "100%",
-        boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
+    <Panel
+      code="DP"
+      title="Market Depth · Cumulative"
+      meta={
+        <>
+          <span style={{ color: T.up }}>■ BID</span>
+          <span style={{ color: T.down }}>■ ASK</span>
+          <span style={{ color: T.amber }}>┆ MID</span>
+        </>
+      }
+      bodyStyle={{ overflow: "hidden", padding: 6 }}
     >
-      <div
-        style={{
-          padding: "16px 16px 8px 16px",
-          fontWeight: 700,
-          letterSpacing: 0.3,
-          flexShrink: 0,
-        }}
-      >
-        Depth
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          padding: "0 16px 16px 16px",
-          boxSizing: "border-box",
-        }}
-      >
+      <div ref={boxRef} style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        {!book && (
+          <div className="blink" style={{ color: T.amber }}>
+            LOADING DEPTH…
+          </div>
+        )}
         <canvas
           ref={canvasRef}
+          onMouseMove={(e) =>
+            setHoverX(e.clientX - e.currentTarget.getBoundingClientRect().left)
+          }
+          onMouseLeave={() => setHoverX(null)}
           style={{
+            position: "absolute",
+            inset: 0,
             width: "100%",
             height: "100%",
             display: "block",
+            cursor: "crosshair",
           }}
         />
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -1,28 +1,344 @@
+/* Keep in sync with src/theme.ts */
 :root {
-  --bg-app: #000000;
-  --bg-panel: #030303;
-  --border-panel: rgba(255,255,255,0.08);
+  --bg: #000000;
+  --panel: #060606;
+  --panel-hdr: #121212;
+  --line: #262626;
+  --line-soft: #151515;
+
+  --amber: #ff9e1b;
+  --amber-dim: #8a5410;
+  --yellow: #ffd23f;
+  --text: #e6e6e6;
+  --dim: #8c8c8c;
+  --mute: #4d4d4d;
+
+  --up: #20e050;
+  --down: #ff3d3d;
+  --cyan: #38d6ff;
+  --navy: #0e1f47;
+  --navy-text: #c9d6ff;
+
+  --font: "IBM Plex Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2e2e2e #000;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #2e2e2e;
 }
 
 body {
   margin: 0;
-  background: var(--bg-app);
-  color: rgba(255,255,255,0.85);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* CRT scanlines + vignette over everything */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      rgba(0, 0, 0, 0.22) 3px
+    ),
+    radial-gradient(ellipse at center, transparent 65%, rgba(0, 0, 0, 0.35));
 }
 
+code {
+  font-family: var(--font);
+}
+
+/* ─── Panels ─────────────────────────────────────────────────────────────── */
+
 .panel {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-panel);
-  border-radius: 14px;
-  color: rgba(255,255,255,0.85);
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.panel-hdr {
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 6px;
+  background: var(--panel-hdr);
+  border-bottom: 1px solid var(--amber-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.panel-code {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  background: var(--amber);
+  color: #000;
+}
+
+.panel-title {
+  color: var(--amber);
+}
+
+/* No uppercasing here: it turns "µs" into "ΜS", which reads as milliseconds */
+.panel-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--dim);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.panel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+/* Column header row */
+.t-cols {
+  flex-shrink: 0;
+  background: var(--navy);
+  color: var(--navy-text);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.t-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.t-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 6px;
+  border-top: 1px solid var(--line);
+  background: #0b0b0b;
+  color: var(--dim);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+/* ─── Controls ───────────────────────────────────────────────────────────── */
+
+.t-btn {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: #1a1a1a;
+  border: 1px solid;
+  border-color: #4a4a4a #1f1f1f #1f1f1f #4a4a4a;
+  padding: 1px 8px;
+  cursor: pointer;
+}
+.t-btn:hover:not(:disabled) {
+  color: var(--yellow);
+  background: #242424;
+}
+.t-btn:active:not(:disabled) {
+  border-color: #1f1f1f #4a4a4a #4a4a4a #1f1f1f;
+}
+.t-btn:disabled {
+  color: var(--mute);
+  cursor: not-allowed;
+}
+.t-btn.on {
+  background: var(--amber);
+  color: #000;
+  border-color: var(--yellow) var(--amber-dim) var(--amber-dim) var(--yellow);
+}
+
+.t-input {
+  width: 100%;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--yellow);
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 0;
+  outline: none;
+  caret-color: var(--amber);
+}
+.t-input:focus {
+  border-color: var(--amber);
+  box-shadow: inset 0 0 0 1px var(--amber);
+}
+.t-input:disabled {
+  color: var(--mute);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+.t-input::placeholder {
+  color: var(--mute);
+}
+.t-input::-webkit-outer-spin-button,
+.t-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+.t-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Square status LED; colour comes from `color` */
+.led {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.led.off {
+  background: transparent;
+  box-shadow: none;
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
+  opacity: 0.4;
+}
+
+.glow {
+  text-shadow: 0 0 6px currentColor;
+}
+
+/* ─── Motion ─────────────────────────────────────────────────────────────── */
+
+/* Wraps flashing values so the highlight box doesn't shift layout */
+.fx {
+  display: inline-block;
+  padding: 0 3px;
+  margin: 0 -3px;
+}
+
+.flash-up {
+  animation: flash-up 900ms steps(6, end);
+}
+.flash-down {
+  animation: flash-down 900ms steps(6, end);
+}
+.flash-hot {
+  animation: flash-hot 900ms steps(6, end);
+}
+.flash-new {
+  animation: flash-new 1200ms steps(8, end);
+}
+
+@keyframes flash-up {
+  0%,
+  20% {
+    background-color: var(--up);
+    color: #000;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes flash-down {
+  0%,
+  20% {
+    background-color: var(--down);
+    color: #000;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes flash-hot {
+  0%,
+  20% {
+    background-color: var(--amber);
+    color: #000;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes flash-new {
+  0%,
+  15% {
+    background-color: rgba(255, 158, 27, 0.35);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.blink {
+  animation: blink 1s steps(1, end) infinite;
+}
+.blink-fast {
+  animation: blink 0.4s steps(1, end) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.cursor::after {
+  content: "█";
+  color: var(--amber);
+  animation: blink 1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up,
+  .flash-down,
+  .flash-hot,
+  .flash-new,
+  .blink,
+  .blink-fast,
+  .cursor::after {
+    animation: none;
+  }
 }

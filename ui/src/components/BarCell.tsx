@@ -1,58 +1,64 @@
+import { ReactNode } from "react";
 import { Side } from "../types/types";
+
+export const ROW_HEIGHT = 18;
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+// LED-segment depth bars
+const BID_BAR =
+  "repeating-linear-gradient(90deg, rgba(32,224,80,0.30) 0 3px, rgba(32,224,80,0.08) 3px 4px)";
+const ASK_BAR =
+  "repeating-linear-gradient(90deg, rgba(255,61,61,0.30) 0 3px, rgba(255,61,61,0.08) 3px 4px)";
+
 export function BarCell({
   side,
   value,
   max,
+  columns,
+  highlight,
   children,
 }: {
   side: Side;
   value: number;
   max: number;
-  orders?: number[];
-  children: React.ReactNode;
+  columns: string;
+  highlight?: boolean;
+  children: ReactNode;
 }) {
   const pct = max <= 0 ? 0 : clamp((value / max) * 100, 0, 100);
-
-  const bidGradient =
-    "linear-gradient(90deg, rgba(0, 255, 94, 0.18) 0%, rgba(34,197,94,0.40) 100%)";
-  const askGradient =
-    "linear-gradient(270deg, rgba(255, 0, 0, 0.18) 0%, rgba(255, 0, 0, 0.4) 100%)";
 
   return (
     <div
       style={{
         position: "relative",
-        height: 28,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 10px",
+        height: ROW_HEIGHT,
         overflow: "hidden",
+        background: highlight ? "rgba(255,158,27,0.07)" : undefined,
       }}
     >
       <div
         style={{
           position: "absolute",
-          top: 0,
-          bottom: 0,
-          transition: "width 180ms ease",
+          top: 2,
+          bottom: 2,
+          width: `${pct}%`,
+          transition: "width 180ms steps(3, end)",
           ...(side === "bid"
-            ? { right: 0, width: `${pct}%`, background: bidGradient }
-            : { left: 0, width: `${pct}%`, background: askGradient }),
+            ? { right: 0, background: BID_BAR }
+            : { left: 0, background: ASK_BAR }),
         }}
       />
       <div
         style={{
           position: "relative",
-          width: "100%",
-          zIndex: 1,
-          display: "flex",
-          justifyContent: "space-between",
-          fontVariantNumeric: "tabular-nums",
+          height: "100%",
+          display: "grid",
+          gridTemplateColumns: columns,
+          alignItems: "center",
+          padding: "0 6px",
         }}
       >
         {children}

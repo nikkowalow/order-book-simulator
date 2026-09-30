@@ -2,35 +2,37 @@ import React, { useState, useRef } from "react";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useAnalyticsStore } from "../stores/analyticsStore";
 import BalanceStrip from "./BalanceStrip";
+import Panel from "./Panel";
+import { T, fmt } from "../theme";
 
-type Toast = { msg: string; type: "success" | "error" } | null;
+type Status = { msg: string; type: "success" | "error"; n: number } | null;
 
 export default function OrderEntry() {
   const { send } = useWebSocket();
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
   const [orderType, setOrderType] = useState<"LIMIT" | "MARKET">("LIMIT");
-  const [toast, setToast] = useState<Toast>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [status, setStatus] = useState<Status>(null);
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { addLatency } = useAnalyticsStore.getState();
 
-  const showToast = (msg: string, type: "success" | "error") => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ msg, type });
-    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  const showStatus = (msg: string, type: "success" | "error") => {
+    if (statusTimer.current) clearTimeout(statusTimer.current);
+    setStatus((s) => ({ msg, type, n: (s?.n ?? 0) + 1 }));
+    statusTimer.current = setTimeout(() => setStatus(null), 5000);
   };
 
   const submitOrder = async (side: "BUY" | "SELL") => {
     const q = parseInt(qty, 10);
     if (!q || q <= 0) {
-      showToast("Invalid quantity", "error");
+      showStatus("INVALID QUANTITY", "error");
       return;
     }
 
     if (orderType === "LIMIT") {
       const p = parseInt(price, 10);
       if (!p || p <= 0) {
-        showToast("Invalid price", "error");
+        showStatus("INVALID PRICE", "error");
         return;
       }
     }
@@ -46,231 +48,157 @@ export default function OrderEntry() {
     const t1 = performance.now();
     try {
       const { msg: data } = await send(msg);
-      addLatency(performance.now() - t1);
+      const rtt = performance.now() - t1;
+      addLatency(rtt);
 
       if (data.error) {
-        showToast(`Rejected: ${data.error}`, "error");
+        showStatus(`REJECTED: ${String(data.error).toUpperCase()}`, "error");
         return;
       }
 
       const filled = data.trades?.length ?? 0;
-      showToast(
-        filled > 0
-          ? `${side} filled — ${filled} trade${filled !== 1 ? "s" : ""}`
-          : `${side} order resting`,
+      showStatus(
+        `${side} ${filled > 0 ? `FILLED · ${filled} TRADE${filled !== 1 ? "S" : ""}` : "RESTING"} · RTT ${rtt.toFixed(2)}MS`,
         "success",
       );
     } catch (e: any) {
-      showToast(e?.message ?? "Request failed", "error");
+      showStatus(String(e?.message ?? "Request failed").toUpperCase(), "error");
     }
   };
 
   const isLimit = orderType === "LIMIT";
-  const isMarket = orderType === "MARKET";
+  const p = parseInt(price, 10);
+  const q = parseInt(qty, 10);
+  const notional = isLimit && p > 0 && q > 0 ? p * q : null;
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    height: 36,
-    padding: "0 10px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 6,
+  const sideButton = (side: "BUY" | "SELL"): React.CSSProperties => ({
+    flex: 1,
+    height: 28,
+    font: "inherit",
     fontSize: 13,
-    background: "rgba(255,255,255,0.05)",
-    color: "rgba(255,255,255,0.9)",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 10,
-    fontWeight: 600,
-    color: "rgba(255,255,255,0.3)",
-    letterSpacing: "0.07em",
-    textTransform: "uppercase",
-    marginBottom: 5,
-    display: "block",
-  };
+    fontWeight: 700,
+    letterSpacing: "0.12em",
+    cursor: "pointer",
+    color: "#000",
+    background: side === "BUY" ? T.up : T.down,
+    border: "1px solid",
+    borderColor:
+      side === "BUY"
+        ? "#8bffa8 #0c7a28 #0c7a28 #8bffa8"
+        : "#ff9a9a #8a1414 #8a1414 #ff9a9a",
+  });
 
   return (
-    <div
-      className="panel"
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        boxSizing: "border-box",
-        position: "relative",
-        overflow: "hidden",
-      }}
+    <Panel
+      code="TK"
+      title="Order Ticket"
+      meta={
+        <span style={{ display: "flex", gap: 3 }}>
+          {(["LIMIT", "MARKET"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setOrderType(t)}
+              className={orderType === t ? "t-btn on" : "t-btn"}
+              style={{ fontSize: 10, padding: "0 5px" }}
+            >
+              {t === "LIMIT" ? "LMT" : "MKT"}
+            </button>
+          ))}
+        </span>
+      }
+      bodyStyle={{ overflow: "hidden" }}
     >
       <BalanceStrip />
 
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "10px 14px",
-          gap: 8,
-        }}
-      >
-        {/* Row 1: Type (left half) + Price & Qty (right half) */}
-        <div style={{ display: "flex", gap: 8 }}>
-          {/* Type toggle — left 50% */}
-          <div style={{ flex: 1 }}>
-            <span style={labelStyle}>Type</span>
-            <div
-              style={{
-                display: "flex",
-                height: 36,
-                borderRadius: 6,
-                overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              <button
-                onClick={() => setOrderType("LIMIT")}
-                style={{
-                  flex: 1,
-                  border: "none",
-                  borderRight: "1px solid rgba(255,255,255,0.1)",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  letterSpacing: "0.04em",
-                  background: isLimit ? "rgba(59,130,246,0.22)" : "transparent",
-                  color: isLimit ? "rgb(147,197,253)" : "rgba(255,255,255,0.3)",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                LIMIT
-              </button>
-              <button
-                onClick={() => setOrderType("MARKET")}
-                style={{
-                  flex: 1,
-                  border: "none",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  letterSpacing: "0.04em",
-                  background: isMarket
-                    ? "rgba(245,158,11,0.18)"
-                    : "transparent",
-                  color: isMarket
-                    ? "rgb(252,211,77)"
-                    : "rgba(255,255,255,0.3)",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                MKT
-              </button>
-            </div>
-          </div>
-
-          {/* Price + Qty — right 50% */}
-          <div style={{ flex: 1, display: "flex", gap: 6 }}>
-            <div
-              style={{
-                flex: 1,
-                opacity: isLimit ? 1 : 0.35,
-                transition: "opacity 0.15s",
-              }}
-            >
-              <span style={labelStyle}>Price</span>
-              <input
-                type="number"
-                placeholder="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                disabled={!isLimit}
-                style={{
-                  ...inputStyle,
-                  cursor: isLimit ? "text" : "not-allowed",
-                }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <span style={labelStyle}>Qty</span>
-              <input
-                type="number"
-                placeholder="0"
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-          </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "6px 6px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          <label style={{ opacity: isLimit ? 1 : 0.4 }}>
+            <span className="t-label" style={{ display: "block", marginBottom: 2 }}>
+              Limit Px
+            </span>
+            <input
+              type="number"
+              className="t-input"
+              placeholder={isLimit ? "0" : "MKT"}
+              value={isLimit ? price : ""}
+              onChange={(e) => setPrice(e.target.value)}
+              disabled={!isLimit}
+            />
+          </label>
+          <label>
+            <span className="t-label" style={{ display: "block", marginBottom: 2 }}>
+              Qty
+            </span>
+            <input
+              type="number"
+              className="t-input"
+              placeholder="0"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+            />
+          </label>
         </div>
 
-        {/* Row 2: BUY + SELL each taking half the width */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => submitOrder("BUY")}
-            style={{
-              flex: 1,
-              height: 36,
-              border: "none",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              letterSpacing: "0.05em",
-              background: "rgb(22,163,74)",
-              color: "white",
-            }}
-          >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 10,
+            color: T.dim,
+          }}
+        >
+          <span>
+            <span style={{ color: T.amber }}>ORDER</span>{" "}
+            <span style={{ color: T.text }}>
+              {q > 0 ? fmt(q) : "—"} @ {isLimit ? (p > 0 ? fmt(p, 1) : "—") : "MKT"}
+            </span>
+          </span>
+          <span>
+            <span style={{ color: T.amber }}>NOTIONAL</span>{" "}
+            <span style={{ color: T.text }}>
+              {notional != null ? `$${fmt(notional)}` : isLimit ? "—" : "@ BEST"}
+            </span>
+          </span>
+        </div>
+
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => submitOrder("BUY")} style={sideButton("BUY")}>
             BUY
           </button>
-          <button
-            onClick={() => submitOrder("SELL")}
-            style={{
-              flex: 1,
-              height: 36,
-              border: "none",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              letterSpacing: "0.05em",
-              background: "rgb(220,38,38)",
-              color: "white",
-            }}
-          >
+          <button onClick={() => submitOrder("SELL")} style={sideButton("SELL")}>
             SELL
           </button>
         </div>
       </div>
 
-      {/* Toast bar */}
-      {toast && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            borderRadius: "0 0 14px 14px",
-            padding: "7px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            background:
-              toast.type === "success"
-                ? "rgba(22,163,74,0.9)"
-                : "rgba(220,38,38,0.9)",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.75 }}>
-            {toast.type === "success" ? "✓" : "✕"}
+      {/* Message line */}
+      <div
+        style={{
+          padding: "2px 6px",
+          borderTop: `1px solid ${T.line}`,
+          background: "#0a0a0a",
+          fontSize: 10,
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        <span style={{ color: T.amber }}>MSG&gt; </span>
+        {status ? (
+          <span
+            key={status.n}
+            className={status.type === "success" ? "fx flash-up" : "fx flash-down"}
+            style={{ color: status.type === "success" ? T.up : T.down }}
+          >
+            {status.msg}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "white" }}>
-            {toast.msg}
+        ) : (
+          <span className="cursor" style={{ color: T.dim }}>
+            READY{" "}
           </span>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Panel>
   );
 }

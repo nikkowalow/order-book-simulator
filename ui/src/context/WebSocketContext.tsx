@@ -7,10 +7,12 @@ import {
   ReactNode,
   useState,
 } from "react";
-import { WS_URL } from "../config/config";
+import { SERVER_URL, WS_URL } from "../config/config";
 import { Book, RestingOrder, Trade } from "../types/types";
+import { SAMPLE_MS, useFeedStore } from "../stores/feedStore";
 
 const SESSION_KEY = "obs_userId";
+const MAX_TRADES = 200;
 
 interface WebSocketContextValue {
   send: (message: object) => Promise<any>;
@@ -43,8 +45,45 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     >(),
   );
 
+  // Seed the tape with recent prints so it isn't empty until the next trade.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${SERVER_URL}/trades?limit=${MAX_TRADES}`, { cache: "no-store" })
+      .then((res) => (res.ok ? (res.json() as Promise<Trade[]>) : []))
+      .then((seed) => {
+        if (cancelled || !Array.isArray(seed)) return;
+        setTrades((live) => {
+          const seen = new Set(live.map((t) => `${t.trade_id}:${t.ts}`));
+          const older = seed.filter((t) => !seen.has(`${t.trade_id}:${t.ts}`));
+          return [...live, ...older].slice(0, MAX_TRADES);
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
+    let msgTotal = 0;
+    let lastMsgAt: number | null = null;
+
+    // Feed telemetry for the status bar: rate over the last second of samples.
+    const samples: number[] = [];
+    let sampledTotal = 0;
+    const sampler = setInterval(() => {
+      const delta = msgTotal - sampledTotal;
+      sampledTotal = msgTotal;
+      samples.push(delta);
+      if (samples.length > 1000 / SAMPLE_MS) samples.shift();
+      useFeedStore.setState({
+        msgTotal,
+        msgRate: samples.reduce((a, b) => a + b, 0),
+        rx: delta > 0,
+        lastMsgAt,
+      });
+    }, SAMPLE_MS);
 
     function connect() {
       // Append stored userId as query param so the server can reclaim the session.
@@ -52,12 +91,16 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       const url = stored ? `${WS_URL}?userId=${stored}` : WS_URL;
       const ws = new WebSocket(url);
       wsRef.current = ws;
+      useFeedStore.setState({ status: "connecting" });
 
       ws.onopen = () => {
         console.log("WebSocket connected");
+        useFeedStore.setState({ status: "live", connectedAt: Date.now() });
       };
 
       ws.onmessage = (event) => {
+        msgTotal++;
+        lastMsgAt = Date.now();
         const msg = JSON.parse(event.data);
 
         // Handle session assignment from server
@@ -89,8 +132,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         }
 
         if (msg.type === "trade") {
-          console.log("Received trade via WS", msg.payload);
-          setTrades((prev) => [msg.payload, ...prev].slice(0, 200));
+          // The server sends trade fields at the top level, not under `payload`.
+          const trade: Trade = msg.payload ?? msg;
+          console.log("Received trade via WS", trade);
+          setTrades((prev) => [trade, ...prev].slice(0, MAX_TRADES));
           return;
         }
 
@@ -103,6 +148,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       ws.onclose = () => {
         console.log("WebSocket disconnected, reconnecting...");
+        useFeedStore.setState((s) => ({
+          status: "down",
+          connectedAt: null,
+          reconnects: s.reconnects + 1,
+        }));
         reconnectTimer = setTimeout(connect, 2000);
       };
 
@@ -115,7 +165,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       clearTimeout(reconnectTimer);
-      wsRef.current?.close();
+      clearInterval(sampler);
+      if (wsRef.current) {
+        // Detach so an intentional close doesn't schedule a reconnect.
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
     };
   }, []);
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import OrderBookTable from "./OrderBookTable";
 import DepthChart from "./DepthChart";
+import { T } from "../theme";
 
 export default function ViewportGate({
   children,
@@ -33,9 +34,9 @@ export default function ViewportGate({
           style={{
             position: "absolute",
             inset: 0,
-            backdropFilter: "blur(12px)",
+            backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",
-            background: "rgba(0,0,0,0.2)",
+            background: "rgba(0,0,0,0.45)",
             zIndex: 5,
             display: "flex",
             alignItems: "center",
@@ -43,19 +44,25 @@ export default function ViewportGate({
             pointerEvents: "none",
           }}
         >
-          <p
+          <div
             style={{
-              color: "rgba(255,255,255,0.9)",
-              fontFamily: "monospace",
-              fontSize: 18,
-              letterSpacing: 2,
-              textTransform: "uppercase",
+              padding: "12px 16px",
+              margin: 16,
+              background: "#000",
+              border: `1px solid ${T.amber}`,
+              color: T.amber,
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
               textAlign: "center",
-              margin: 0,
+              lineHeight: 1.6,
             }}
           >
-            Please view on a desktop or laptop
-          </p>
+            <div className="blink" style={{ color: T.down }}>
+              ▲ DISPLAY TOO NARROW ▲
+            </div>
+            TERMINAL REQUIRES A DESKTOP OR LAPTOP
+          </div>
         </div>
         <div style={{ flex: "0 0 60%" }}>
           <OrderBookTable />

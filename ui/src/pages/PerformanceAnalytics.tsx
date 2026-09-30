@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
-import Header from "../components/Header";
+import Panel, { LiveTag } from "../components/Panel";
+import Flash from "../components/Flash";
+import { T } from "../theme";
 import { SERVER_URL } from "../config/config";
 import {
   BarChart,
@@ -262,68 +264,54 @@ const SEED_DATA: BenchmarkData = {
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
-const CARD: React.CSSProperties = {
-  background: "#0d0d0d",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 14,
-  padding: "18px 20px",
-  display: "flex",
-  flexDirection: "column",
-  minHeight: 0,
-};
-
-const LABEL: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase" as const,
-  color: "rgba(255,255,255,0.3)",
-  marginBottom: 14,
-  flexShrink: 0,
-};
+const CHART_BODY: React.CSSProperties = { overflow: "hidden", padding: "8px 8px 4px" };
 
 const AXIS = {
-  tick: { fill: "rgba(255,255,255,0.28)", fontSize: 10 },
-  axisLine: { stroke: "rgba(255,255,255,0.08)" },
+  tick: { fill: T.dim, fontSize: 10, fontFamily: T.font },
+  axisLine: { stroke: T.line },
   tickLine: false as const,
 };
 
+const GRID = { stroke: T.line, strokeDasharray: "1 3" };
+
 const TOOLTIP = {
   contentStyle: {
-    background: "#111",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 8,
+    background: "#000",
+    border: `1px solid ${T.amber}`,
+    borderRadius: 0,
     fontSize: 11,
-    color: "rgba(255,255,255,0.85)",
+    fontFamily: T.font,
+    color: T.text,
   },
-  labelStyle: { color: "rgba(255,255,255,0.4)", marginBottom: 4 },
-  cursor: { fill: "rgba(255,255,255,0.04)" },
+  labelStyle: { color: T.amber, marginBottom: 4 },
+  cursor: { fill: "rgba(255,158,27,0.08)" },
 };
 
 const SCENARIO_COLORS: Record<string, string> = {
-  "resting limit": "#58a6ff",
-  "aggressive limit": "#3fb950",
-  cancel: "#d2a8ff",
-  "mixed (60/30/10)": "#ffa657",
-  "mkt sweep  3 levels": "#79c0ff",
-  "mkt sweep 10 levels": "#f78166",
-  "mkt sweep 20 levels": "#ff7b72",
+  "resting limit": T.cyan,
+  "aggressive limit": T.up,
+  cancel: T.magenta,
+  "mixed (60/30/10)": T.amber,
+  "mkt sweep  3 levels": T.yellow,
+  "mkt sweep 10 levels": "#ff7a45",
+  "mkt sweep 20 levels": T.down,
 };
 
 const SHORT: Record<string, string> = {
-  "resting limit": "Resting",
-  "aggressive limit": "Aggressive",
-  cancel: "Cancel",
-  "mixed (60/30/10)": "Mixed",
-  "mkt sweep  3 levels": "Sweep 3L",
-  "mkt sweep 10 levels": "Sweep 10L",
-  "mkt sweep 20 levels": "Sweep 20L",
+  "resting limit": "RESTING",
+  "aggressive limit": "AGGRESSIVE",
+  cancel: "CANCEL",
+  "mixed (60/30/10)": "MIXED",
+  "mkt sweep  3 levels": "SWEEP 3L",
+  "mkt sweep 10 levels": "SWEEP 10L",
+  "mkt sweep 20 levels": "SWEEP 20L",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PerformanceAnalytics() {
   const [bench, setBench] = useState<BenchmarkData | null>(SEED_DATA);
+  const [source, setSource] = useState<"seed" | "live">("seed");
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -338,6 +326,7 @@ export default function PerformanceAnalytics() {
       })
       .then((json) => {
         setBench(json);
+        setSource("live");
         setFetchError(null);
       })
       .catch((err) => {
@@ -356,6 +345,8 @@ export default function PerformanceAnalytics() {
     ? selected
     : (scenarioNames[0] ?? "");
   const sc = bench?.scenarios[safeSelected] ?? null;
+  const scColor = SCENARIO_COLORS[safeSelected] ?? T.cyan;
+  const scName = SHORT[safeSelected] ?? safeSelected.toUpperCase();
 
   // Bar chart data: all scenarios × {p50, p90, p99}
   const comparisonData = useMemo(
@@ -385,564 +376,332 @@ export default function PerformanceAnalytics() {
 
   const statItems = sc
     ? [
-        { label: "Avg", value: sc.avg_us, color: "#79c0ff" },
-        { label: "P50", value: sc.p50_us, color: "#3fb950" },
-        { label: "P90", value: sc.p90_us, color: "#ffa657" },
-        { label: "P99", value: sc.p99_us, color: "#f78166" },
-        { label: "Max", value: sc.max_us, color: "rgb(248,113,113)" },
-        {
-          label: "n",
-          value: sc.n,
-          color: "rgba(255,255,255,0.4)",
-          noUnit: true,
-        },
+        { label: "Avg", value: sc.avg_us, color: T.cyan },
+        { label: "P50", value: sc.p50_us, color: T.up },
+        { label: "P90", value: sc.p90_us, color: T.amber },
+        { label: "P99", value: sc.p99_us, color: "#ff7a45" },
+        { label: "Max", value: sc.max_us, color: T.down },
+        { label: "N", value: sc.n, color: T.dim, noUnit: true },
       ]
     : [];
+
+  if (!bench) return null;
 
   return (
     <div
       style={{
-        height: "100vh",
-        background: "#000",
-        color: "rgba(255,255,255,0.85)",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
-        gap: 8,
-        padding: 8,
-        boxSizing: "border-box",
+        gap: 3,
       }}
     >
-      {/* Shared header */}
-      <div style={{ height: 48, flexShrink: 0 }}>
-        <Header />
-      </div>
-      {/* Page content */}
+      {/* Toolbar: scenario keys left, status + run right */}
       <div
         style={{
-          flex: 1,
-          minHeight: 0,
+          flexShrink: 0,
           display: "flex",
-          flexDirection: "column",
-          padding: "0 16px 16px",
+          alignItems: "center",
+          gap: 4,
+          height: 24,
+          paddingRight: 6,
+          background: T.panel,
+          border: `1px solid ${T.line}`,
         }}
       >
-        {/* Everything below only renders once we have data */}
-        {
-          bench && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                flex: 1,
-                minHeight: 0,
-              }}
-            >
-              {/* Toolbar: scenario tabs left, status + button right */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 16,
-                  flexShrink: 0,
-                }}
-              >
-                {scenarioNames.map((name) => {
-                  const active = name === safeSelected;
+        <span className="panel-code" style={{ fontWeight: 700, marginRight: 6 }}>
+          BENCH
+        </span>
+        <span className="t-label" style={{ marginRight: 4 }}>
+          Scenario
+        </span>
+        {scenarioNames.map((name, i) => (
+          <button
+            key={name}
+            onClick={() => setSelected(name)}
+            className={name === safeSelected ? "t-btn on" : "t-btn"}
+          >
+            {i + 1}) {SHORT[name] ?? name}
+          </button>
+        ))}
+
+        <div
+          style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}
+        >
+          {loading ? (
+            <span className="blink-fast">
+              <LiveTag label="RUNNING BENCHMARK…" color={T.yellow} blink={false} />
+            </span>
+          ) : fetchError ? (
+            <span className="blink" style={{ color: T.down, fontWeight: 700 }}>
+              ERR {fetchError.toUpperCase()}
+            </span>
+          ) : (
+            <LiveTag
+              label={source === "live" ? "LIVE RESULT" : "SEED DATA"}
+              color={source === "live" ? T.up : T.dim}
+              blink={false}
+            />
+          )}
+          <button onClick={runBenchmark} disabled={loading} className="t-btn on">
+            {loading ? "RUNNING…" : "RUN BENCH <GO>"}
+          </button>
+        </div>
+      </div>
+
+      {/* 2×3 panel grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gridTemplateRows: "1fr 1fr 1fr",
+          gap: 3,
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        {/* ── G1: p50 / p90 / p99 comparison across all scenarios ── */}
+        <Panel code="G1" title="Latency by percentile · all scenarios" meta="µs" bodyStyle={CHART_BODY}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={comparisonData} barCategoryGap="28%">
+              <CartesianGrid {...GRID} vertical={false} />
+              <XAxis
+                dataKey="name"
+                {...AXIS}
+                interval={0}
+                tick={{ ...AXIS.tick, fontSize: 9 }}
+              />
+              <YAxis {...AXIS} width={40} />
+              <Tooltip
+                {...TOOLTIP}
+                formatter={(v) => [`${Number(v).toFixed(3)} µs`]}
+              />
+              <Legend
+                iconType="square"
+                iconSize={8}
+                wrapperStyle={{ fontSize: 10, fontFamily: T.font, color: T.dim, paddingTop: 2 }}
+              />
+              <Bar dataKey="p50" name="P50" fill={T.up} />
+              <Bar dataKey="p90" name="P90" fill={T.amber} />
+              <Bar dataKey="p99" name="P99" fill={T.down} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        {/* ── G2: Percentile curve for selected scenario ── */}
+        <Panel code="G2" title={`Percentile curve · ${scName}`} meta="µs" bodyStyle={CHART_BODY}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sc?.percentile_curve ?? []}>
+              <CartesianGrid {...GRID} vertical={false} />
+              <XAxis
+                dataKey="p"
+                {...AXIS}
+                tickFormatter={(v) => `p${v}`}
+                interval={0}
+                tick={{ ...AXIS.tick, fontSize: 9 }}
+              />
+              <YAxis {...AXIS} width={40} />
+              <Tooltip
+                {...TOOLTIP}
+                formatter={(v) => [`${Number(v).toFixed(3)} µs`, "latency"]}
+                labelFormatter={(l) => `p${l}`}
+              />
+              <Line
+                type="stepAfter"
+                dataKey="value_us"
+                stroke={scColor}
+                strokeWidth={1.5}
+                dot={{ r: 2.5, fill: scColor, strokeWidth: 0 }}
+                activeDot={{ r: 4 }}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        {/* ── G3: Histogram for selected scenario ── */}
+        <Panel code="G3" title={`Latency histogram · ${scName}`} meta="≤ µs" bodyStyle={CHART_BODY}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sc?.histogram ?? []} barCategoryGap="12%">
+              <CartesianGrid {...GRID} vertical={false} />
+              <XAxis
+                dataKey="le_us"
+                {...AXIS}
+                tick={{ ...AXIS.tick, fontSize: 9 }}
+              />
+              <YAxis {...AXIS} width={40} />
+              <Tooltip
+                {...TOOLTIP}
+                formatter={(v) => [Number(v).toLocaleString(), "count"]}
+                labelFormatter={(l) => `≤ ${l} µs`}
+              />
+              <Bar dataKey="count" fill={scColor} fillOpacity={0.85} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        {/* ── G4: Tail spike ratio (p99 / p50) ── */}
+        <Panel code="G4" title="Tail spike ratio · p99 ÷ p50" bodyStyle={CHART_BODY}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={tailData} layout="vertical" barCategoryGap="20%">
+              <CartesianGrid {...GRID} horizontal={false} />
+              <XAxis type="number" {...AXIS} tickFormatter={(v) => `${v}×`} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                {...AXIS}
+                width={72}
+                tick={{ ...AXIS.tick, fontSize: 9 }}
+              />
+              <Tooltip
+                {...TOOLTIP}
+                formatter={(v) => [`${Number(v)}×`, "p99 / p50"]}
+              />
+              <Bar
+                dataKey="ratio"
+                shape={(props: any) => {
+                  const color =
+                    props.ratio < 2 ? T.up : props.ratio < 5 ? T.amber : T.down;
                   return (
-                    <button
-                      key={name}
-                      onClick={() => setSelected(name)}
-                      style={{
-                        padding: "5px 12px",
-                        borderRadius: 6,
-                        border: `1px solid ${active ? (SCENARIO_COLORS[name] ?? "rgba(255,255,255,0.2)") : "rgba(255,255,255,0.1)"}`,
-                        background: active
-                          ? `${SCENARIO_COLORS[name] ?? "#58a6ff"}18`
-                          : "transparent",
-                        color: active
-                          ? (SCENARIO_COLORS[name] ?? "rgba(255,255,255,0.85)")
-                          : "rgba(255,255,255,0.4)",
-                        fontSize: 12,
-                        fontWeight: active ? 600 : 400,
-                        cursor: "pointer",
-                        letterSpacing: "0.02em",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {SHORT[name] ?? name}
-                    </button>
+                    <rect
+                      x={props.x}
+                      y={props.y}
+                      width={props.width}
+                      height={props.height}
+                      fill={color}
+                    />
                   );
-                })}
+                }}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
 
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  {loading && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <div
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: "50%",
-                          background: "#ffa657",
-                          boxShadow: "0 0 6px rgba(255,166,87,0.7)",
-                          animation: "pulse 1.2s ease-in-out infinite",
-                        }}
-                      />
-                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
-                        Running benchmark…
-                      </span>
-                    </div>
-                  )}
-                  {!loading && !fetchError && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <div
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: "50%",
-                          background: "rgb(34,197,94)",
-                          boxShadow: "0 0 6px rgba(34,197,94,0.5)",
-                        }}
-                      />
-                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
-                        Seed data
-                      </span>
-                    </div>
-                  )}
-                  {fetchError && (
-                    <span style={{ fontSize: 11, color: "rgb(248,113,113)" }}>
-                      {fetchError}
-                    </span>
-                  )}
-                  <button
-                    onClick={runBenchmark}
-                    disabled={loading}
-                    style={{
-                      padding: "7px 16px",
-                      borderRadius: 7,
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      background: loading
-                        ? "rgba(255,255,255,0.04)"
-                        : "rgba(88,166,255,0.1)",
-                      color: loading ? "rgba(255,255,255,0.25)" : "#58a6ff",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      letterSpacing: "0.04em",
-                      cursor: loading ? "not-allowed" : "pointer",
-                      transition: "background 0.15s, color 0.15s",
-                    }}
-                  >
-                    {loading ? "Running…" : "Run Benchmark"}
-                  </button>
-                </div>
-              </div>
-
-              {/* 2×2 chart grid + bottom metrics row */}
+        {/* ── M1: Key stats for selected scenario ── */}
+        <Panel code="M1" title={`Key metrics · ${scName}`} meta="µs">
+          <div
+            style={{
+              flex: 1,
+              display: "grid",
+              gridTemplateColumns: "repeat(6, 1fr)",
+              alignItems: "center",
+            }}
+          >
+            {statItems.map(({ label, value, color, noUnit }, i) => (
               <div
+                key={label}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gridTemplateRows: "1fr 1fr 1fr",
-                  gap: 12,
-                  flex: 1,
-                  minHeight: 0,
+                  padding: "0 10px",
+                  borderLeft: i > 0 ? `1px solid ${T.line}` : undefined,
                 }}
               >
-                {/* ── Card 1: p50 / p90 / p99 comparison across all scenarios ── */}
-                <div style={CARD}>
-                  <div style={LABEL}>Latency by percentile — all scenarios</div>
-                  <div style={{ flex: 1, minHeight: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={comparisonData} barCategoryGap="28%">
-                        <CartesianGrid
-                          stroke="rgba(255,255,255,0.06)"
-                          strokeDasharray="3 3"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="name"
-                          {...AXIS}
-                          interval={0}
-                          tick={{ ...AXIS.tick, fontSize: 9 }}
-                        />
-                        <YAxis {...AXIS} unit=" µs" width={46} />
-                        <Tooltip
-                          {...TOOLTIP}
-                          formatter={(v) => [`${Number(v).toFixed(3)} µs`]}
-                        />
-                        <Legend
-                          iconType="square"
-                          iconSize={8}
-                          wrapperStyle={{
-                            fontSize: 10,
-                            color: "rgba(255,255,255,0.4)",
-                            paddingTop: 6,
-                          }}
-                        />
-                        <Bar
-                          dataKey="p50"
-                          name="p50"
-                          fill="#3fb950"
-                          radius={[3, 3, 0, 0]}
-                        />
-                        <Bar
-                          dataKey="p90"
-                          name="p90"
-                          fill="#ffa657"
-                          radius={[3, 3, 0, 0]}
-                        />
-                        <Bar
-                          dataKey="p99"
-                          name="p99"
-                          fill="#f78166"
-                          radius={[3, 3, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                <div className="t-label" style={{ marginBottom: 6 }}>
+                  {label}
                 </div>
-
-                {/* ── Card 2: Percentile curve for selected scenario ── */}
-                <div style={CARD}>
-                  <div style={LABEL}>
-                    Percentile curve — {SHORT[safeSelected] ?? safeSelected}
-                  </div>
-                  <div style={{ flex: 1, minHeight: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={sc?.percentile_curve ?? []}>
-                        <CartesianGrid
-                          stroke="rgba(255,255,255,0.06)"
-                          strokeDasharray="3 3"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="p"
-                          {...AXIS}
-                          tickFormatter={(v) => `p${v}`}
-                          interval={0}
-                          tick={{ ...AXIS.tick, fontSize: 9 }}
-                        />
-                        <YAxis {...AXIS} unit=" µs" width={46} />
-                        <Tooltip
-                          {...TOOLTIP}
-                          formatter={(v) => [
-                            `${Number(v).toFixed(3)} µs`,
-                            "latency",
-                          ]}
-                          labelFormatter={(l) => `p${l}`}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="value_us"
-                          stroke={SCENARIO_COLORS[safeSelected] ?? "#58a6ff"}
-                          strokeWidth={2}
-                          dot={{
-                            r: 3,
-                            fill: SCENARIO_COLORS[safeSelected] ?? "#58a6ff",
-                            strokeWidth: 0,
-                          }}
-                          activeDot={{ r: 4 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* ── Card 3: Histogram for selected scenario ── */}
-                <div style={CARD}>
-                  <div style={LABEL}>
-                    Latency histogram — {SHORT[safeSelected] ?? safeSelected}
-                  </div>
-                  <div style={{ flex: 1, minHeight: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={sc?.histogram ?? []} barCategoryGap="12%">
-                        <CartesianGrid
-                          stroke="rgba(255,255,255,0.06)"
-                          strokeDasharray="3 3"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="le_us"
-                          {...AXIS}
-                          tick={{ ...AXIS.tick, fontSize: 9 }}
-                          label={{
-                            value: "≤ µs",
-                            position: "insideBottomRight",
-                            offset: -4,
-                            style: {
-                              fill: "rgba(255,255,255,0.2)",
-                              fontSize: 9,
-                            },
-                          }}
-                        />
-                        <YAxis {...AXIS} width={46} />
-                        <Tooltip
-                          {...TOOLTIP}
-                          formatter={(v) => [
-                            Number(v).toLocaleString(),
-                            "count",
-                          ]}
-                          labelFormatter={(l) => `≤ ${l} µs`}
-                        />
-                        <Bar
-                          dataKey="count"
-                          fill={SCENARIO_COLORS[safeSelected] ?? "#58a6ff"}
-                          fillOpacity={0.75}
-                          radius={[3, 3, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* ── Card 4 (moved): Tail spike ratio (p99 / p50) ── */}
-                <div style={CARD}>
-                  <div style={LABEL}>Tail spike ratio — p99 ÷ p50</div>
-                  <div style={{ flex: 1, minHeight: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={tailData}
-                        layout="vertical"
-                        barCategoryGap="20%"
-                      >
-                        <CartesianGrid
-                          stroke="rgba(255,255,255,0.06)"
-                          strokeDasharray="3 3"
-                          horizontal={false}
-                        />
-                        <XAxis
-                          type="number"
-                          {...AXIS}
-                          tickFormatter={(v) => `${v}×`}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          {...AXIS}
-                          width={58}
-                          tick={{ ...AXIS.tick, fontSize: 9 }}
-                        />
-                        <Tooltip
-                          {...TOOLTIP}
-                          formatter={(v) => [`${Number(v)}×`, "p99 / p50"]}
-                        />
-                        <Bar
-                          dataKey="ratio"
-                          radius={[0, 3, 3, 0]}
-                          shape={(props: any) => {
-                            const color =
-                              props.ratio < 2
-                                ? "#3fb950"
-                                : props.ratio < 5
-                                  ? "#ffa657"
-                                  : "#f78166";
-                            return (
-                              <rect
-                                x={props.x}
-                                y={props.y}
-                                width={props.width}
-                                height={props.height}
-                                fill={color}
-                                rx={3}
-                              />
-                            );
-                          }}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* ── Card 5: Key stats for selected scenario ── */}
-                <div style={CARD}>
-                  <div style={LABEL}>
-                    Key metrics — {SHORT[safeSelected] ?? safeSelected}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "grid",
-                      gridTemplateColumns: "repeat(6, 1fr)",
-                      gap: 8,
-                      alignItems: "center",
-                    }}
-                  >
-                    {statItems.map(({ label, value, color, noUnit }) => (
-                      <div
-                        key={label}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: "rgba(255,255,255,0.28)",
-                            letterSpacing: "0.07em",
-                            textTransform: "uppercase",
-                            marginBottom: 5,
-                          }}
-                        >
-                          {label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 26,
-                            fontWeight: 700,
-                            color,
-                            fontVariantNumeric: "tabular-nums",
-                            letterSpacing: "-0.02em",
-                            lineHeight: 1,
-                          }}
-                        >
-                          {noUnit
-                            ? typeof value === "number"
-                              ? value.toLocaleString()
-                              : value
-                            : typeof value === "number"
-                              ? value.toFixed(3)
-                              : value}
-                        </div>
-                        {!noUnit && (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "rgba(255,255,255,0.2)",
-                              marginTop: 4,
-                            }}
-                          >
-                            µs
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ── Card 6: Summary table — all scenarios ── */}
-                <div style={CARD}>
-                  <div style={LABEL}>Summary — all scenarios</div>
-                  <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
-                    <table
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderCollapse: "collapse",
-                        tableLayout: "fixed",
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          {["Scenario", "Avg", "P50", "P90", "P99", "Max"].map(
-                            (h) => (
-                              <th
-                                key={h}
-                                style={{
-                                  textAlign:
-                                    h === "Scenario" ? "left" : "right",
-                                  padding: "0 10px 6px",
-                                  fontSize: 10,
-                                  fontWeight: 600,
-                                  letterSpacing: "0.07em",
-                                  textTransform: "uppercase",
-                                  color: "rgba(255,255,255,0.25)",
-                                  borderBottom:
-                                    "1px solid rgba(255,255,255,0.06)",
-                                  whiteSpace: "nowrap",
-                                  width: h === "Scenario" ? "auto" : "14%",
-                                }}
-                              >
-                                {h}
-                              </th>
-                            ),
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {scenarioNames.map((name) => {
-                          const s = bench.scenarios[name];
-                          const isSelected = name === safeSelected;
-                          return (
-                            <tr
-                              key={name}
-                              onClick={() => setSelected(name)}
-                              style={{
-                                background: isSelected
-                                  ? `${SCENARIO_COLORS[name] ?? "#58a6ff"}10`
-                                  : "transparent",
-                                cursor: "pointer",
-                                transition: "background 0.1s",
-                              }}
-                            >
-                              <td
-                                style={{
-                                  padding: "0 10px",
-                                  borderBottom:
-                                    "1px solid rgba(255,255,255,0.04)",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 7,
-                                    height: 7,
-                                    borderRadius: "50%",
-                                    background:
-                                      SCENARIO_COLORS[name] ?? "#58a6ff",
-                                    display: "inline-block",
-                                    marginRight: 7,
-                                    verticalAlign: "middle",
-                                  }}
-                                />
-                                <span
-                                  style={{
-                                    color: isSelected
-                                      ? "rgba(255,255,255,0.85)"
-                                      : "rgba(255,255,255,0.5)",
-                                    fontSize: 13,
-                                    verticalAlign: "middle",
-                                  }}
-                                >
-                                  {SHORT[name] ?? name}
-                                </span>
-                              </td>
-                              {[
-                                s.avg_us,
-                                s.p50_us,
-                                s.p90_us,
-                                s.p99_us,
-                                s.max_us,
-                              ].map((v, i) => (
-                                <td
-                                  key={i}
-                                  style={{
-                                    padding: "0 10px",
-                                    textAlign: "right",
-                                    borderBottom:
-                                      "1px solid rgba(255,255,255,0.04)",
-                                    fontVariantNumeric: "tabular-nums",
-                                    color: "rgba(255,255,255,0.6)",
-                                    fontSize: 13,
-                                  }}
-                                >
-                                  {v.toFixed(3)}
-                                </td>
-                              ))}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                <Flash
+                  value={value}
+                  style={{ fontSize: 24, fontWeight: 700, color, lineHeight: 1 }}
+                >
+                  {noUnit ? value.toLocaleString() : value.toFixed(3)}
+                </Flash>
+                <div style={{ fontSize: 10, color: T.mute, marginTop: 4 }}>
+                  {noUnit ? "SAMPLES" : "µs"}
                 </div>
               </div>
-            </div>
-          ) /* end bench && */
-        }
-      </div>{" "}
-      {/* end page content */}
+            ))}
+          </div>
+        </Panel>
+
+        {/* ── T1: Summary table — all scenarios ── */}
+        <Panel code="T1" title="Summary · all scenarios" meta="µs · CLICK ROW TO SELECT">
+          <table
+            style={{
+              width: "100%",
+              height: "100%",
+              borderCollapse: "collapse",
+              tableLayout: "fixed",
+              fontSize: 12,
+            }}
+          >
+            <thead>
+              <tr className="t-cols">
+                {["Scenario", "Avg", "P50", "P90", "P99", "Max"].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      textAlign: h === "Scenario" ? "left" : "right",
+                      padding: "2px 8px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      width: h === "Scenario" ? "auto" : "14%",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scenarioNames.map((name) => {
+                const s = bench.scenarios[name];
+                const isSelected = name === safeSelected;
+                return (
+                  <tr
+                    key={name}
+                    onClick={() => setSelected(name)}
+                    style={{
+                      background: isSelected ? T.navy : "transparent",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding: "0 8px",
+                        borderBottom: `1px solid ${T.lineSoft}`,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 7,
+                          height: 7,
+                          background: SCENARIO_COLORS[name] ?? T.cyan,
+                          display: "inline-block",
+                          marginRight: 7,
+                        }}
+                      />
+                      <span
+                        style={{
+                          color: isSelected ? T.text : T.dim,
+                          fontWeight: isSelected ? 700 : 500,
+                        }}
+                      >
+                        {isSelected ? "► " : ""}
+                        {SHORT[name] ?? name}
+                      </span>
+                    </td>
+                    {[s.avg_us, s.p50_us, s.p90_us, s.p99_us, s.max_us].map(
+                      (v, i) => (
+                        <td
+                          key={i}
+                          style={{
+                            padding: "0 8px",
+                            textAlign: "right",
+                            borderBottom: `1px solid ${T.lineSoft}`,
+                            color: isSelected ? T.text : T.dim,
+                          }}
+                        >
+                          {v.toFixed(3)}
+                        </td>
+                      ),
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
     </div>
   );
 }
